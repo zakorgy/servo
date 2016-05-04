@@ -13,6 +13,7 @@ use net_traits::bluetooth_thread::{BluetoothCharacteristicMsg, BluetoothCharacte
 use net_traits::bluetooth_thread::{BluetoothDescriptorMsg, BluetoothDescriptorsMsg};
 use net_traits::bluetooth_thread::{BluetoothDeviceMsg, BluetoothMethodMsg};
 use net_traits::bluetooth_thread::{BluetoothResult, BluetoothServiceMsg, BluetoothServicesMsg};
+use net_traits::allowed_devices_map::AllowedDevicesMap;
 use std::borrow::ToOwned;
 use std::collections::HashMap;
 use std::string::String;
@@ -25,6 +26,7 @@ const PRIMARY_SERVICE_ERROR: &'static str = "No primary service found";
 const CHARACTERISTIC_ERROR: &'static str = "No characteristic found";
 const DESCRIPTOR_ERROR: &'static str = "No descriptor found";
 const VALUE_ERROR: &'static str = "No characteristic or descriptor found with that id";
+const SECURITY_ERROR: &'static str = "The operation is insecure";
 
 bitflags! {
     flags Flags: u32 {
@@ -114,6 +116,7 @@ pub struct BluetoothManager {
     cached_services: HashMap<String, BluetoothGATTService>,
     cached_characteristics: HashMap<String, BluetoothGATTCharacteristic>,
     cached_descriptors: HashMap<String, BluetoothGATTDescriptor>,
+    allowed_devices_map: AllowedDevicesMap,
 }
 
 impl BluetoothManager {
@@ -128,6 +131,7 @@ impl BluetoothManager {
             cached_services: HashMap::new(),
             cached_characteristics: HashMap::new(),
             cached_descriptors: HashMap::new(),
+            allowed_devices_map: AllowedDevicesMap::new()
         }
     }
 
@@ -221,6 +225,7 @@ impl BluetoothManager {
     }
 
     fn get_gatt_service(&mut self, adapter: &mut BluetoothAdapter, service_id: &str) -> Option<&BluetoothGATTService> {
+
         return_if_cached!(self.cached_services, service_id);
         let device_id = match self.service_to_device.get(service_id) {
             Some(d) => d.clone(),
@@ -363,6 +368,15 @@ impl BluetoothManager {
         let matched_devices: Vec<BluetoothDevice> = devices.into_iter()
                                                            .filter(|d| matches_filters(d, options.get_filters()))
                                                            .collect();
+        for device in &matched_devices {
+            if let Ok(ref address) = device.get_address() {
+                let _id = self.allowed_devices_map.add_device(&None,
+                                                              address,
+                                                              options.get_filters(),
+                                                              options.get_optional_services());
+            }
+        }
+        // TODO: Add here the filtering for the uuid-s array presenting in the device (zakorgy)
         for device in matched_devices {
             if let Ok(address) = device.get_address() {
                 let message = Ok(BluetoothDeviceMsg {
@@ -422,6 +436,10 @@ impl BluetoothManager {
                            device_id: String,
                            uuid: String,
                            sender: IpcSender<BluetoothResult<BluetoothServiceMsg>>) {
+        if !self.allowed_devices_map
+                .is_origin_allowed_to_acces_service(None, &device_id, &uuid) {
+                return drop(sender.send(Err(String::from(SECURITY_ERROR))))
+        }
         let mut adapter = match self.get_or_create_adapter() {
             Some(a) => a,
             None => return drop(sender.send(Err(String::from(ADAPTER_ERROR)))),
@@ -448,6 +466,12 @@ impl BluetoothManager {
                             device_id: String,
                             uuid: Option<String>,
                             sender: IpcSender<BluetoothResult<BluetoothServicesMsg>>) {
+        if let Some(ref present_uuid) = uuid {
+            if !self.allowed_devices_map
+                    .is_origin_allowed_to_acces_service(None, &device_id, present_uuid) {
+                        return drop(sender.send(Err(String::from(SECURITY_ERROR))))
+            }
+        }
         let mut adapter = match self.get_or_create_adapter() {
             Some(a) => a,
             None => return drop(sender.send(Err(String::from(ADAPTER_ERROR)))),

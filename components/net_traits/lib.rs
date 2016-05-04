@@ -22,6 +22,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 extern crate msg;
+extern crate rand;
+extern crate rustc_serialize;
 extern crate serde;
 extern crate url;
 extern crate util;
@@ -42,6 +44,7 @@ use storage_thread::StorageThreadMsg;
 use url::Url;
 use websocket::header;
 
+pub mod allowed_devices_map;
 pub mod bluetooth_scanfilter;
 pub mod bluetooth_thread;
 pub mod filemanager_thread;

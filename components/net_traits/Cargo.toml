@@ -18,6 +18,8 @@ hyper = { version = "0.9", features = [ "serde-serialization" ] }
 image = "0.10"
 lazy_static = "0.2"
 log = "0.3.5"
+rand = "0.3"
+rustc-serialize = "0.3"
 serde = "0.7"
 serde_macros = "0.7"
 url = {version = "1.0.0", features = ["heap_size"]}

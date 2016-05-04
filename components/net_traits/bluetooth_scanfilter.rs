@@ -90,4 +90,8 @@ impl RequestDeviceoptions {
     pub fn get_filters(&self) -> &BluetoothScanfilterSequence {
         &self.filters
     }
+
+    pub fn get_optional_services(&self) -> Vec<String> {
+        (&self.optional_services.0).clone()
+    }
 }
