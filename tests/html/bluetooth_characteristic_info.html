@@ -10,10 +10,14 @@
     function onButtonClick() {
         clear();
         var serviceUuid = document.getElementById('service').value;
+        var characteristicUuid = document.getElementById('characteristic').value;
+
+        if(!(serviceUuid) || !(characteristicUuid)) {
+            return log('All input field must be filled!');
+        }
         if (serviceUuid.startsWith('0x'))
             serviceUuid = parseInt(serviceUuid, 16);
 
-        var characteristicUuid = document.getElementById('characteristic').value;
         if (characteristicUuid.startsWith('0x'))
             characteristicUuid = parseInt(characteristicUuid, 16);
 
