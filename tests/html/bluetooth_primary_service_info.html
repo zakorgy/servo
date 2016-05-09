@@ -11,13 +11,13 @@
     function onButtonClick() {
         clear();
         var options = {filters: [], optinalServices: []};
-
+        
         var filterService = document.getElementById('service').value;
-        if (filterService.startsWith('0x'))
-          filterService = parseInt(filterService, 16);
-
-        if (filterService)
+        if (filterService) {
+            if (filterService.startsWith('0x'))
+                filterService = parseInt(filterService, 16);
             options.filters.push({services: [filterService]});
+        }
 
         var filterName = document.getElementById('name').value;
         if (filterName)
