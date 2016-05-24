@@ -5,9 +5,10 @@
 use dom::bindings::codegen::Bindings::WorkerNavigatorBinding;
 use dom::bindings::codegen::Bindings::WorkerNavigatorBinding::WorkerNavigatorMethods;
 use dom::bindings::global::GlobalRef;
-use dom::bindings::js::Root;
-use dom::bindings::reflector::{Reflector, reflect_dom_object};
+use dom::bindings::js::{JS, MutNullableHeap, Root};
+use dom::bindings::reflector::{Reflector, Reflectable, reflect_dom_object};
 use dom::navigatorinfo;
+use dom::permissions::Permissions;
 use dom::workerglobalscope::WorkerGlobalScope;
 use util::str::DOMString;
 
@@ -15,12 +16,15 @@ use util::str::DOMString;
 #[dom_struct]
 pub struct WorkerNavigator {
     reflector_: Reflector,
+    permissions: MutNullableHeap<JS<Permissions>>,
+
 }
 
 impl WorkerNavigator {
     fn new_inherited() -> WorkerNavigator {
         WorkerNavigator {
             reflector_: Reflector::new(),
+            permissions: Default::default(),
         }
     }
 
@@ -70,5 +74,9 @@ impl WorkerNavigatorMethods for WorkerNavigator {
     // https://html.spec.whatwg.org/multipage/#navigatorlanguage
     fn Language(&self) -> DOMString {
         navigatorinfo::Language()
+    }
+
+    fn Permissions(&self) -> Root<Permissions> {
+        self.permissions.or_init(|| Permissions::new(self.global().r()))
     }
 }

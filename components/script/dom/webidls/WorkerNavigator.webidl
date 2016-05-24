@@ -8,3 +8,9 @@ interface WorkerNavigator {};
 WorkerNavigator implements NavigatorID;
 WorkerNavigator implements NavigatorLanguage;
 //WorkerNavigator implements NavigatorOnLine;
+WorkerNavigator implements WorkerNavigatorPermissions;
+
+[NoInterfaceObject] //, Exposed=(Worker)]
+interface WorkerNavigatorPermissions {
+    readonly attribute Permissions permissions;
+};

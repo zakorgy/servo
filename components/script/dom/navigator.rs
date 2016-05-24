@@ -10,6 +10,7 @@ use dom::bindings::reflector::{Reflector, Reflectable, reflect_dom_object};
 use dom::bluetooth::Bluetooth;
 use dom::mimetypearray::MimeTypeArray;
 use dom::navigatorinfo;
+use dom::permissions::Permissions;
 use dom::pluginarray::PluginArray;
 use dom::window::Window;
 use util::str::DOMString;
@@ -20,6 +21,7 @@ pub struct Navigator {
     bluetooth: MutNullableHeap<JS<Bluetooth>>,
     plugins: MutNullableHeap<JS<PluginArray>>,
     mime_types: MutNullableHeap<JS<MimeTypeArray>>,
+    permissions: MutNullableHeap<JS<Permissions>>,
 }
 
 impl Navigator {
@@ -29,6 +31,7 @@ impl Navigator {
             bluetooth: Default::default(),
             plugins: Default::default(),
             mime_types: Default::default(),
+            permissions: Default::default(),
         }
     }
 
@@ -98,5 +101,9 @@ impl NavigatorMethods for Navigator {
     // https://html.spec.whatwg.org/multipage/#dom-navigator-javaenabled
     fn JavaEnabled(&self) -> bool {
         false
+    }
+
+    fn Permissions(&self) -> Root<Permissions> {
+        self.permissions.or_init(|| Permissions::new(self.global().r()))
     }
 }
