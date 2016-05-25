@@ -5,7 +5,7 @@
 use dom::bindings::codegen::Bindings::PermissionStatusBinding::{self, PermissionStatusMethods, PermissionState};
 use dom::bindings::global::GlobalRef;
 use dom::bindings::js::Root;
-use dom::bindings::reflector::reflect_dom_object;
+use dom::bindings::reflector::{Reflectable, reflect_dom_object};
 use dom::bindings::codegen::Bindings::EventHandlerBinding::EventHandlerNonNull;
 use dom::eventtarget::EventTarget;
 
@@ -27,6 +27,10 @@ impl PermissionStatus {
         reflect_dom_object(box PermissionStatus::new_inherited(state),
                            global,
                            PermissionStatusBinding::Wrap)
+    }
+
+    pub fn update_state(&mut self, descriptor: &PermissionDescriptor) {
+        retrieve_permission_storage(&descriptor.name, self.eventtarget.global().r())
     }
 }
 

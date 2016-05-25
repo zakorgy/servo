@@ -34,9 +34,9 @@ dictionary DevicePermissionDescriptor : PermissionDescriptor {
 //[Exposed=(Window,Worker)]
 interface Permissions {
     [Throws]
-    PermissionStatus query(BluetoothPermissionDescriptor permissionDesc);
+    PermissionStatus query(PermissionDescriptor permissionDesc);
     [Throws]
-    PermissionStatus request(BluetoothPermissionDescriptor permissionDesc);
+    PermissionStatus request(PermissionDescriptor permissionDesc);
 
     /*Promise<PermissionStatus> query(PermissionDescriptor permissionDesc);
 
