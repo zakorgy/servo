@@ -3,14 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use dom::bindings::codegen::Bindings::BluetoothPermissionResultBinding::BluetoothPermissionDescriptor;
-use dom::bindings::codegen::Bindings::PermissionsBinding::{self, PermissionsMethods, PermissionName, PermissionNameValues};
+use dom::bindings::codegen::Bindings::PermissionsBinding::{self, PermissionName, PermissionDescriptor};
+use dom::bindings::codegen::Bindings::PermissionsBinding::{ PermissionsMethods, PermissionNameValues};
 use dom::bindings::codegen::Bindings::PermissionStatusBinding::{PermissionStorage, PermissionState};
-//use dom::bindings::codegen::Bindings::WindowBinding::WindowMethods;
 use dom::bindings::error::Error::Type;
 use dom::bindings::error::Fallible;
 use dom::bindings::global::GlobalRef;
 use dom::bindings::js::Root;
-use dom::bindings::reflector::{Reflector, reflect_dom_object};
+use dom::bindings::reflector::{Reflector, Reflectable, reflect_dom_object};
 use dom::permissionstatus::PermissionStatus;
 use std::cell::RefCell;
 use std::clone::Clone;
@@ -58,19 +58,19 @@ pub struct PermissionStore(HashMap<PermissionStorageID,PermissionStorage>);
 
 impl PermissionStore {
     // https://w3c.github.io/permissions/#retrieve-a-permission-storage-entry
-    fn retrieve_permission_storage_entry(&self, ps_id: &PermissionStorageID) -> Option<&PermissionStorage> {
+    pub fn retrieve_permission_storage_entry(&self, ps_id: &PermissionStorageID) -> Option<&PermissionStorage> {
         return self.0.get(ps_id)
     }
     // https://w3c.github.io/permissions/#create-a-permission-storage-entry
-    fn create_permission_storage_entry(&mut self, ps_id: &PermissionStorageID, pstorage: PermissionStorage) {
+    pub fn create_permission_storage_entry(&mut self, ps_id: &PermissionStorageID, pstorage: PermissionStorage) {
         self.0.insert(ps_id.clone(), pstorage);
     }
     // https://w3c.github.io/permissions/#delete-a-permission-storage-entry
-    fn delete_permission_storage_entry(&mut self, ps_id: &PermissionStorageID) {
+    pub fn delete_permission_storage_entry(&mut self, ps_id: &PermissionStorageID) {
         self.0.remove(ps_id);
     }
     // https://w3c.github.io/permissions/#retrieve-the-permission-storage
-    fn retrieve_permission_storage(&self, name: &PermissionName, globalref: GlobalRef) -> PermissionStorage {
+    pub fn retrieve_permission_storage(&self, name: &PermissionName, globalref: GlobalRef) -> PermissionStorage {
         let id = get_permission_storage_id(name, globalref);
         match self.retrieve_permission_storage_entry(&id) {
             Some(pstorage) => pstorage.clone(),
@@ -101,8 +101,11 @@ impl Permissions {
 }
 
 impl PermissionsMethods for Permissions {
-    fn Query(&self, _permissionDesc: &PermissionDescriptor) -> Fallible<Root<PermissionStatus>> {
-        Err(Type(String::from("")))
+    // https://w3c.github.io/permissions/#dom-permissions-query
+    fn Query(&self, permissionDesc: &PermissionDescriptor) -> Fallible<Root<PermissionStatus>> {
+        let mut status = PermissionStatus::new(self.global().r());
+        status.update_state(permissionDesc);
+        Ok(status)
     }
 
     fn Request(&self, _permissionDesc: &PermissionDescriptor) -> Fallible<Root<PermissionStatus>> {
