@@ -1,19 +1,89 @@
 <!DOCTYPE html>
 <html>
 <title>Web Bluetooth example with multiple filters</title>
+<style>
+
+.droptext {
+    background-color: #f9f9f9;
+    min-width: 153px;
+    border: 1px solid black;
+}
+
+.dropdown {
+    position: relative;
+    /*display: inline-block;*/
+}
+
+.dropdown_content {
+    margin-top: 25px;
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    font-size: xx-small;
+}
+
+.dropdown_content p {
+    color: black;
+    padding: 6px;
+    display: block;
+    cursor: pointer;
+}
+
+.dropdown_content p:hover {background-color: #969696}
+
+.dropdown:hover .dropdown_content {
+    display: block;
+}
+
+.servicebtn {
+    margin-left: 12px;
+    background-color: #00ff00;
+}
+
+.servicebtn:hover {
+    background-color: #ff0000;
+}
+
+.services_div {
+    margin-left: 150px;
+    max-width: 300px;
+    padding-top: 30px;
+}
+
+</style>
 <body>
     <div id="content">
         <div id="filters">
             <div>
-                <p>Service names/UUIDs must be separeted by spaces</p>
-                <br></br>
                 <p>Filter 1</p>
-                <input id="service_1" type="text" cols="50" autofocus placeholder="Service names/UUIDs" value="battery_service">
-                <input id="name_1" type="text" placeholder="Device Name">
-                <input id="namePrefix_1" type="text" placeholder="Device Name Prefix">
+                <div class="dropdown">
+                    <input class="droptext" type="text" id="service_1" placeholder="Bluetooth Services ▼">
+                    <div class="dropdown_content">
+                        <p onclick="addService('battery_service',1)">battery_service</p>
+                        <p onclick="addService('blood_pressure',1)">blood_pressure</p>
+                        <p onclick="addService('body_composition',1)">body_composition</p>
+                        <p onclick="addService('bond_management',1)">bond_management</p>
+                        <p onclick="addService('continuous_glucose_monitoring',1)">continuous_glucose_monitoring</p>
+                        <p onclick="addService('current_time',1)">current_time</p>
+                        <p onclick="addService('cycling_power',1)">cycling_power</p>
+                        <p onclick="addService('cycling_speed_and_cadence',1)">cycling_speed_and_cadence</p>
+                        <p onclick="addService('device_information',1)">device_information</p>
+                        <p onclick="addService('environmental_sensing',1)">environmental_sensing</p>
+                        <p onclick="addService('glucose',1)">glucose</p>
+                        <p onclick="addService('health_thermometer',1)">health_thermometer</p>
+                        <p onclick="addService('heart_rate',1)">heart_rate</p>
+                    </div>
+                    <button onclick="addNewServiceBtn(1)">Add Service</button>
+                    <input id="name_1" type="text" placeholder="Device Name">
+                    <input id="namePrefix_1" type="text" placeholder="Device Name Prefix">
+                </div>
+                <div id="services_1" class="services_div"></div>
             </div>
         </div>
+        <div id="buttons">
         <button type="button" onclick="addNewFilter()">Add New Filter</button>
+        </div>
         <div>
             <p>Optional Service UUID-s (separeted by spaces)</p>
             <textarea id="optionalServices" rows="4" cols="50"></textarea>
@@ -22,68 +92,129 @@
         <pre id="log"></pre>
     <div>
     <script>
-    var currentFilterNumber = 1;
+    var filterCount = 1;
     var device;
     var server;
     var primaryService;
     var characteristic;
+    function addNewServiceBtn(filterNumber) {
+        var serviceName = document.getElementById('service_' + filterNumber).value;
+        return addService(serviceName, filterNumber);
+    }
+
+    function addService(serviceName, filterNumber) {
+        if(!(document.getElementById(serviceName + "_" + filterNumber))) {
+            var button = document.createElement('button');
+            button.setAttribute('id', serviceName + "_" + filterNumber);
+            button.setAttribute('class', 'servicebtn')
+            button.setAttribute('onclick', 'removeButton(this, ' + filterNumber + ')');
+            button.innerHTML = serviceName + "  ⓧ ";
+            document.getElementById('services_' + filterNumber).appendChild(button);
+        }
+    }
+
+    function removeButton(button) {
+        button.remove();
+    }
+
     function addNewFilter() {
         clear();
-        var prevService = document.getElementById('service_'+(currentFilterNumber)).value;
-        var prevName = document.getElementById('name_'+(currentFilterNumber)).value;
-        var prevNamePrefix = document.getElementById('namePrefix_'+(currentFilterNumber)).value;
-        if (!(prevService || prevName || prevNamePrefix)) {
+        var prevServices = document.getElementById('services_' + filterCount).childElementCount;
+        var prevName = document.getElementById('name_'+ filterCount).value;
+        var prevNamePrefix = document.getElementById('namePrefix_' + filterCount).value;
+        if (!(prevServices || prevName || prevNamePrefix)) {
             clear();
-            log('Cannot create next filter, if the previous filter is empty');
-            return;
+            return log('Cannot create next filter, if the previous filter is empty');
         }
-        currentFilterNumber++;
+        filterCount++;
 
         var newDiv = document.createElement('div');
         var newP = document.createElement('p');
-        var filterText = document.createTextNode('Filter '+currentFilterNumber);
+        var filterText = document.createTextNode('Filter '+ filterCount);
         newP.appendChild(filterText);
         newDiv.appendChild(newP);
 
+        var newDropdownDiv = document.createElement('div');
+        newDropdownDiv.setAttribute('class', 'dropdown');
+
         var newInputField = document.createElement('input');
+        newInputField.setAttribute('class','droptext');
         newInputField.setAttribute('type','text');
-        newInputField.setAttribute('id','service_'+currentFilterNumber);
-        newInputField.setAttribute('placeholder','Bluetooth Service');
-        newDiv.appendChild(newInputField);
+        newInputField.setAttribute('id', 'service' + filterCount);
+        newInputField.setAttribute('placeholder','Bluetooth Services ▼');
+        newDropdownDiv.appendChild(newInputField);
+
+        var newDropdownContentDiv = document.createElement('div');
+        newDropdownContentDiv.setAttribute('class', 'dropdown_content');
+        newDropdownContentDiv.innerHTML = "<p onclick=\"addService('battery_service'," + filterCount + ")\">battery_service</p><p onclick=\"addService('blood_pressure'," + filterCount + ")\">blood_pressure</p><p onclick=\"addService('body_composition'," + filterCount + ")\">body_composition</p><p onclick=\"addService('bond_management'," + filterCount + ")\">bond_management</p><p onclick=\"addService('continuous_glucose_monitoring'," + filterCount + ")\">continuous_glucose_monitoring</p><p onclick=\"addService('current_time'," + filterCount + ")\">current_time</p><p onclick=\"addService('cycling_power'," + filterCount + ")\">cycling_power</p><p onclick=\"addService('cycling_speed_and_cadence'," + filterCount + ")\">cycling_speed_and_cadence</p><p onclick=\"addService('device_information'," + filterCount + ")\">device_information</p><p onclick=\"addService('environmental_sensing'," + filterCount + ")\">environmental_sensing</p><p onclick=\"addService('glucose'," + filterCount + ")\">glucose</p><p onclick=\"addService('health_thermometer'," + filterCount + ")\">health_thermometer</p><p onclick=\"addService('heart_rate'," + filterCount + ")\">heart_rate</p>";
+        newDropdownDiv.appendChild(newDropdownContentDiv);
+
+        var newAddServiceBtn = document.createElement('button');
+        newAddServiceBtn.setAttribute('onclick', 'addNewServiceBtn(' + filterCount + ')');
+        newAddServiceBtn.innerHTML = "Add Service";
+        newDropdownDiv.appendChild(newAddServiceBtn);
 
         newInputField = document.createElement('input');
-        newInputField.setAttribute('id','name_'+currentFilterNumber);
+        newInputField.setAttribute('id','name_'+ filterCount);
         newInputField.setAttribute('placeholder','Device Name');
-        newDiv.appendChild(newInputField);
+        newDropdownDiv.appendChild(newInputField);
 
         newInputField = document.createElement('input');
-        newInputField.setAttribute('id','namePrefix_'+currentFilterNumber);
+        newInputField.setAttribute('id','namePrefix_'+ filterCount);
         newInputField.setAttribute('placeholder','Device Name Prefix');
-        newDiv.appendChild(newInputField);
+        newDropdownDiv.appendChild(newInputField);
+
+        newDiv.appendChild(newDropdownDiv);
+
+        var newServicesDiv = document.createElement('div');
+        newServicesDiv.setAttribute('id', 'services_' + filterCount);
+        newServicesDiv.setAttribute('class', 'services_div');
+        newDiv.appendChild(newServicesDiv);
 
         document.getElementById('filters').appendChild(newDiv);
+
+        if(!document.getElementById('deleteButton')) {
+            var deleteButton = document.createElement('button');
+            deleteButton.setAttribute('id', 'deleteButton');
+            deleteButton.setAttribute('onclick','removeLastfilter()');
+            document.getElementById('buttons').appendChild(deleteButton);
+            document.getElementById('deleteButton').innerHTML = 'Remove Last Filter';
+        }
+    }
+
+    function removeLastfilter() {
+        var filtersDiv = document.getElementById('filters');
+        filtersDiv.removeChild(filtersDiv.lastChild);
+        if (--filterCount === 1) {
+            var buttonsDiv = document.getElementById('buttons');
+            buttonsDiv.removeChild(buttonsDiv.lastChild);
+        }
     }
 
     function findDevice() {
-        clear();
         var options = {filters: [{}], optionalServices: []};
-
-        for (var i = 1; i <= currentFilterNumber; ++i) {
+        clear();
+        for (var i = 1; i <= filterCount; ++i) {
             if(!options.filters[i-1]) {
                 options.filters[i-1] = {};
             }
-            var filterService = document.getElementById('service_'+i).value;
-            if (filterService) {
-                if (filterService.startsWith('0x'))
-                  filterService = parseInt(filterService, 16);
-                options.filters[i-1].services = [filterService];
+            var serviceBtn = document.getElementById('services_' + i).firstChild;
+            if (serviceBtn) {
+                options.filters[i-1].services = [];
+            }
+            while (serviceBtn) {
+                var serviceName = serviceBtn.id.split('_' +  i)[0];
+                if(serviceName.startsWith('0x'))
+                    serviceName = parseInt(serviceName, 16);
+                options.filters[i-1].services.push(serviceName);
+                serviceBtn = serviceBtn.nextSibling;
             }
 
-            var filterName = document.getElementById('name_'+i).value;
+            var filterName = document.getElementById('name_' + i).value;
             if (filterName)
                 options.filters[i-1].name = filterName;
 
-            var filterNamePrefix = document.getElementById('namePrefix_'+i).value;
+            var filterNamePrefix = document.getElementById('namePrefix_' + i).value;
             if (filterNamePrefix)
                 options.filters[i-1].namePrefix = filterNamePrefix;
         }
@@ -124,10 +255,10 @@
                 document.getElementById('title').innerHTML = 'Currently connected to Primary Service (' + document.getElementById('requested').value + ').';
                 if (!document.getElementById('getInclServiceBtn')) {
                     var newDiv = document.createElement('div');
-                    var getInclServiceBtn = document.createElement("button");
+                    var getInclServiceBtn = document.createElement('button');
                     getInclServiceBtn.setAttribute('id','getInclServiceBtn');
                     getInclServiceBtn.setAttribute('onclick','getIncludedService()');
-                    var getInclServicesBtn = document.createElement("button");
+                    var getInclServicesBtn = document.createElement('button');
                     getInclServicesBtn.setAttribute('id','getInclServicesBtn');
                     getInclServicesBtn.setAttribute('onclick','getAndListIncludedServices()');
                     newDiv.appendChild(getInclServiceBtn);
@@ -214,8 +345,8 @@
                 log('Getting Included Service...');
                 var includedService = primaryService.getIncludedService(requestedService);
                 log('Included Service found on device: ' + includedService.device.name);
-                log('> UUID:                          ' + includedService.uuid);
-                log('> Is primary:                    ' + includedService.isPrimary);
+                log('> UUID:                           ' + includedService.uuid);
+                log('> Is primary:                     ' + includedService.isPrimary);
                 document.getElementById('title').innerHTML = 'Currently connected to Service (' + document.getElementById('requested').value + ').';
             }
         } catch(err) {
@@ -323,13 +454,18 @@
     function asciiToDecimal(byteStr) {
         var result = [];
         for(i = 0; i < byteStr.length; i++) {
-            result[i] = byteStr[i].charCodeAt(0) ;
+            result[i] = byteStr[i].charCodeAt(0);
         }
         return result;
     }
 
     function decimalToASCII(inputStr) {
-        return String.fromCharCode(inputStr);
+        var splitString = inputStr.split("");
+        var result = [];
+        for(i = 0; i < splitString.length; i++) {
+            result[i] = String.fromCharCode(splitString[i]);
+        }
+        return result;
     }
     </script>
 </body>
