@@ -11,7 +11,7 @@
 
 .dropdown {
     position: relative;
-    /*display: inline-block;*/
+    display: inline-block;
 }
 
 .dropdown_content {
@@ -39,6 +39,9 @@
 .servicebtn {
     margin-left: 12px;
     background-color: #00ff00;
+    display: block;
+    max-width: 220px;
+    text-align: left;
 }
 
 .servicebtn:hover {
@@ -46,17 +49,33 @@
 }
 
 .services_div {
-    margin-left: 150px;
     max-width: 300px;
     padding-top: 30px;
 }
 
+#right {
+    position: fixed;
+    left: 320px;
+    top: 0px;
+}
+
+#right_content {
+    margin-top: 42px;
+}
+
+#log {
+    position: fixed;
+    right: 0px;
+    bottom: 0px;
+}
 </style>
 <body>
     <div id="content">
         <div id="filters">
             <div>
                 <p>Filter 1</p>
+                <div><input id="name_1" type="text" placeholder="Device Name"></div>
+                <div><input id="namePrefix_1" type="text" placeholder="Device Name Prefix"></div>
                 <div class="dropdown">
                     <input class="droptext" type="text" id="service_1" placeholder="Bluetooth Services ▼">
                     <div class="dropdown_content">
@@ -75,21 +94,38 @@
                         <p onclick="addService('heart_rate',1)">heart_rate</p>
                     </div>
                     <button onclick="addNewServiceBtn(1)">Add Service</button>
-                    <input id="name_1" type="text" placeholder="Device Name">
-                    <input id="namePrefix_1" type="text" placeholder="Device Name Prefix">
                 </div>
                 <div id="services_1" class="services_div"></div>
             </div>
         </div>
         <div id="buttons">
-        <button type="button" onclick="addNewFilter()">Add New Filter</button>
-        </div>
-        <div>
-            <p>Optional Service UUID-s (separeted by spaces)</p>
-            <textarea id="optionalServices" rows="4" cols="50"></textarea>
+            <button type="button" onclick="addNewFilter()">Add New Filter</button>
         </div>
         <button type="button" onclick="findDevice()">Find device</button>
         <pre id="log"></pre>
+        <div id="right">
+            <div class="dropdown">
+                <p>Optional Services</p>
+                <input class="droptext" type="text" id="optionalService" placeholder="Bluetooth Services ▼">
+                <div class="dropdown_content" id="right_content">
+                    <p onclick="addOptionalService('battery_service')">battery_service</p>
+                    <p onclick="addOptionalService('blood_pressure')">blood_pressure</p>
+                    <p onclick="addOptionalService('body_composition')">body_composition</p>
+                    <p onclick="addOptionalService('bond_management')">bond_management</p>
+                    <p onclick="addOptionalService('continuous_glucose_monitoring')">continuous_glucose_monitoring</p>
+                    <p onclick="addOptionalService('current_time')">current_time</p>
+                    <p onclick="addOptionalService('cycling_power')">cycling_power</p>
+                    <p onclick="addOptionalService('cycling_speed_and_cadence')">cycling_speed_and_cadence</p>
+                    <p onclick="addOptionalService('device_information')">device_information</p>
+                    <p onclick="addOptionalService('environmental_sensing')">environmental_sensing</p>
+                    <p onclick="addOptionalService('glucose')">glucose</p>
+                    <p onclick="addOptionalService('health_thermometer')">health_thermometer</p>
+                    <p onclick="addOptionalService('heart_rate')">heart_rate</p>
+                </div>
+            </div>
+            <div><button onclick="addNewOptionalServiceBtn()">Add Optional Service Service</button></div>
+            <div id="optionalServices" class="services_div"></div>
+        </div>
     <div>
     <script>
     var filterCount = 1;
@@ -99,7 +135,8 @@
     var characteristic;
     function addNewServiceBtn(filterNumber) {
         var serviceName = document.getElementById('service_' + filterNumber).value;
-        return addService(serviceName, filterNumber);
+        if(serviceName)
+            return addService(serviceName, filterNumber);
     }
 
     function addService(serviceName, filterNumber) {
@@ -107,9 +144,26 @@
             var button = document.createElement('button');
             button.setAttribute('id', serviceName + "_" + filterNumber);
             button.setAttribute('class', 'servicebtn')
-            button.setAttribute('onclick', 'removeButton(this, ' + filterNumber + ')');
-            button.innerHTML = serviceName + "  ⓧ ";
+            button.setAttribute('onclick', 'removeButton(this)');
+            button.innerHTML = "  ⓧ  " + serviceName;
             document.getElementById('services_' + filterNumber).appendChild(button);
+        }
+    }
+
+    function addNewOptionalServiceBtn() {
+        var serviceName = document.getElementById('optionalService').value;
+        if(serviceName)
+            return addOptionalService(serviceName);
+    }
+
+    function addOptionalService(serviceName) {
+        if(!(document.getElementById(serviceName))) {
+            var button = document.createElement('button');
+            button.setAttribute('id', serviceName);
+            button.setAttribute('class', 'servicebtn')
+            button.setAttribute('onclick', 'removeButton(this)');
+            button.innerHTML = "  ⓧ  " + serviceName;
+            document.getElementById('optionalServices').appendChild(button);
         }
     }
 
@@ -157,12 +211,16 @@
         newInputField = document.createElement('input');
         newInputField.setAttribute('id','name_'+ filterCount);
         newInputField.setAttribute('placeholder','Device Name');
-        newDropdownDiv.appendChild(newInputField);
+        var div = document.createElement('div');
+        div.appendChild(newInputField);
+        newDiv.appendChild(div);
 
         newInputField = document.createElement('input');
         newInputField.setAttribute('id','namePrefix_'+ filterCount);
         newInputField.setAttribute('placeholder','Device Name Prefix');
-        newDropdownDiv.appendChild(newInputField);
+        div = document.createElement('div');
+        div.appendChild(newInputField);
+        newDiv.appendChild(div);
 
         newDiv.appendChild(newDropdownDiv);
 
@@ -219,15 +277,15 @@
                 options.filters[i-1].namePrefix = filterNamePrefix;
         }
 
-        var optionalServices = document.getElementById('optionalServices').value;
-        if (optionalServices) {
-            optionalServices = optionalServices.split(" ");
-            for(var i = 0; i < optionalServices.length; ++i) {
-                if(optionalServices[i].startsWith('0x'))
-                    optionalServices[i] = parseInt(optionalServices[i], 16);
-            }
-            options.optionalServices = optionalServices;
+        var optServiceBtn = document.getElementById('optionalServices').firstChild;
+        while (optServiceBtn) {
+            var serviceName = optServiceBtn.id;
+            if(serviceName.startsWith('0x'))
+                serviceName = parseInt(serviceName,16);
+            options.optionalServices.push(serviceName);
+            optServiceBtn = optServiceBtn.nextSibling;
         }
+
         try {
             log('Requesting Bluetooth Device...');
             device = window.navigator.bluetooth.requestDevice(options);
