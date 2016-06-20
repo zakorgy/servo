@@ -75,7 +75,7 @@
 
     function connect() {
         try {
-            bluetoothDevice.gatt.connect();
+            log(timeStamp() + 'Result of the connect() method of the GATT Server: ' + bluetoothDevice.gatt.connect());
             log(timeStamp() + '> Bluetooth Device connected: ' + bluetoothDevice.gatt.connected);
         } catch(err) {
             log(timeStamp() + err);
