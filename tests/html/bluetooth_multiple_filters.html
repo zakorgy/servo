@@ -37,10 +37,10 @@
 }
 
 .servicebtn {
-    margin-left: 12px;
+    margin-top: 12px;
     background-color: #00ff00;
     display: block;
-    max-width: 220px;
+    max-width: 320px;
     text-align: left;
 }
 
@@ -56,20 +56,18 @@
 #right {
     position: fixed;
     left: 320px;
-    top: 0px;
-}
-
-#right_content {
-    margin-top: 42px;
+    top: 30px;
 }
 
 #log {
     position: fixed;
-    right: 0px;
+    right: 10px;
     bottom: 0px;
 }
+
 </style>
 <body>
+    <div><pre id="hint"> </pre></div>
     <div id="content">
         <div id="filters">
             <div>
@@ -104,8 +102,8 @@
         <button type="button" onclick="findDevice()">Find device</button>
         <pre id="log"></pre>
         <div id="right">
+            <p>Optional Services</p>
             <div class="dropdown">
-                <p>Optional Services</p>
                 <input class="droptext" type="text" id="optionalService" placeholder="Bluetooth Services ▼">
                 <div class="dropdown_content" id="right_content">
                     <p onclick="addOptionalService('battery_service')">battery_service</p>
@@ -133,6 +131,7 @@
     var server;
     var primaryService;
     var characteristic;
+    var requestedServicesSet = new Set();
     function addNewServiceBtn(filterNumber) {
         var serviceName = document.getElementById('service_' + filterNumber).value;
         if(serviceName)
@@ -145,8 +144,11 @@
             button.setAttribute('id', serviceName + "_" + filterNumber);
             button.setAttribute('class', 'servicebtn')
             button.setAttribute('onclick', 'removeButton(this)');
+            button.setAttribute('onmouseover', 'hint("Click button to remove it from the filters")');
+            button.setAttribute('onmouseout', 'clearHint()');
             button.innerHTML = "  ⓧ  " + serviceName;
             document.getElementById('services_' + filterNumber).appendChild(button);
+            requestedServicesSet.add(serviceName);
         }
     }
 
@@ -162,8 +164,11 @@
             button.setAttribute('id', serviceName);
             button.setAttribute('class', 'servicebtn')
             button.setAttribute('onclick', 'removeButton(this)');
+            button.setAttribute('onmouseover', 'hint("Click button to remove it from the filters")');
+            button.setAttribute('onmouseout', 'clearHint()');
             button.innerHTML = "  ⓧ  " + serviceName;
             document.getElementById('optionalServices').appendChild(button);
+            requestedServicesSet.add(serviceName);
         }
     }
 
@@ -289,13 +294,26 @@
         try {
             log('Requesting Bluetooth Device...');
             device = window.navigator.bluetooth.requestDevice(options);
-
             log('Connecting to GATTserver on device...');
             server = device.gatt.connect();
-            document.getElementById('content').innerHTML = '<div id="params"><p id="title">Currently connected to GATT Server</p><input id="requested" type="text"><div><button type="button" onclick="getPrimaryService()">Get Primary Service</button><button type="button" onclick="getAndListPrimaryServices()">List Primary Services on Server</button></div></div><pre id="log"></pre>';
+            if (server) {
+                var contentString = '<div id="params"><p id="title">Currently connected to GATT Server</p><div class="dropdown"><input class="droptext" id="requested" type="text" placeholder="Primary Service"><div class="dropdown_content">';
+                var setIter = requestedServicesSet.values();
+                var service = setIter.next().value;
+                while(service){
+                    contentString += '<p onclick="setInput(this)">' + service + '</p>';
+                    service = setIter.next().value;
+                }
+                contentString += '</div></div><div><button type="button" onclick="getPrimaryService()">Get Primary Service</button><button type="button" onclick="getAndListPrimaryServices()">List Primary Services on Server</button></div></div><pre id="log"></pre>';
+                document.getElementById('content').innerHTML = contentString;
+            }
         } catch(err) {
             log(err);
         }
+    }
+
+    function setInput(paragraph) {
+        document.getElementById('requested').value = paragraph.innerHTML;
     }
 
     function getPrimaryService() {
@@ -358,6 +376,11 @@
                     document.getElementById('params').appendChild(newDiv);;
                     document.getElementById('getCharsBtn').innerHTML = 'List Characteristics';
                 }
+
+                document.getElementById('requested').setAttribute('placeholder', 'Service/Characteristic');
+                if (document.getElementById('removableBtns'))
+                    document.getElementById('content').removeChild(document.getElementById('removableBtns'));
+                document.getElementById('requested').textContent = "";
             } else {
                 log('Text field not filled!');
             }
@@ -365,7 +388,6 @@
             log(err);
         }
     }
-
 
     function getAndListPrimaryServices() {
         clear();
@@ -383,11 +405,37 @@
             } else {
                 log('Searching for Services without any Service name/UUID supplied...');
                 var primaryServices = server.getPrimaryServices();
-                log('> List of Services on the current GATT Server:');
-                for(i = 0; i < primaryServices.length; ++i) {
-                    log('> #' + (i+1) + ": " + primaryServices[i].uuid);
+                if(primaryServices.length > 0) {
+                    if(!(document.getElementById('removableBtns'))) {
+                        var buttonsDiv = document.createElement('div');
+                        buttonsDiv.setAttribute('id','removableBtns')
+                    }
+                    log('> List of Services on the current GATT Server:');
+                    for(i = 0; i < primaryServices.length; ++i) {
+                        log('> #' + (i+1) + ": " + primaryServices[i].uuid);
+                        var newBtn = document.createElement('button');
+                        if(!(document.getElementById('removableBtns'))) {
+                            newBtn.setAttribute('class', 'servicebtn');
+                            newBtn.setAttribute('onclick', 'connectToService(this)');
+                            newBtn.setAttribute('onmouseover', 'hint("Click button to connect to the service")');
+                            newBtn.setAttribute('onmouseout', 'clearHint()');
+                            newBtn.innerHTML = primaryServices[i].uuid;
+                            buttonsDiv.appendChild(newBtn);
+                        }
+                    }
+                    if(!(document.getElementById('removableBtns')))
+                        document.getElementById('content').appendChild(buttonsDiv);
                 }
             }
+        } catch(err) {
+            log(err);
+        }
+    }
+
+    function connectToService(serviceBtn) {
+        document.getElementById('requested').value = serviceBtn.innerHTML;
+        try {
+            getPrimaryService();
         } catch(err) {
             log(err);
         }
@@ -498,6 +546,8 @@
             } catch(err) {
                 log(err);
             }
+        } else {
+            log('Both the New Value field and the input field on the top must be contain a value!');
         }
     }
 
@@ -507,6 +557,13 @@
 
     function log(line) {
         document.getElementById("log").textContent += line + '\n';
+    }
+
+    function hint(line) {
+        document.getElementById("hint").textContent += line + '\n';
+    }
+    function clearHint() {
+        document.getElementById("hint").textContent = " ";
     }
 
     function asciiToDecimal(byteStr) {
