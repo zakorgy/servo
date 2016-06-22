@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<title>Web Bluetooth example with multiple filters</title>
+<body>
+    <div id="content">
+        <div id="filters">
+            <div>
+                <p>Service names/UUIDs must be separeted by spaces</p>
+                <br></br>
+                <p>Filter 1</p>
+                <input id="service_1" type="text" cols="50" autofocus placeholder="Service names/UUIDs" value="battery_service">
+                <input id="name_1" type="text" placeholder="Device Name">
+                <input id="namePrefix_1" type="text" placeholder="Device Name Prefix">
+            </div>
+        </div>
+        <button type="button" onclick="addNewFilter()">Add New Filter</button>
+        <div>
+            <p>Optional Service UUID-s (separeted by spaces)</p>
+            <textarea id="optionalServices" rows="4" cols="50"></textarea>
+        </div>
+        <button type="button" onclick="findDevice()">Find device</button>
+        <pre id="log"></pre>
+    <div>
+    <script>
+    var currentFilterNumber = 1;
+    var device;
+    var server;
+    var primaryService;
+    var characteristic;
+    function addNewFilter() {
+        clear();
+        var prevService = document.getElementById('service_'+(currentFilterNumber)).value;
+        var prevName = document.getElementById('name_'+(currentFilterNumber)).value;
+        var prevNamePrefix = document.getElementById('namePrefix_'+(currentFilterNumber)).value;
+        if (!(prevService || prevName || prevNamePrefix)) {
+            clear();
+            log('Cannot create next filter, if the previous filter is empty');
+            return;
+        }
+        currentFilterNumber++;
+
+        var newDiv = document.createElement('div');
+        var newP = document.createElement('p');
+        var filterText = document.createTextNode('Filter '+currentFilterNumber);
+        newP.appendChild(filterText);
+        newDiv.appendChild(newP);
+
+        var newInputField = document.createElement('input');
+        newInputField.setAttribute('type','text');
+        newInputField.setAttribute('id','service_'+currentFilterNumber);
+        newInputField.setAttribute('placeholder','Bluetooth Service');
+        newDiv.appendChild(newInputField);
+
+        newInputField = document.createElement('input');
+        newInputField.setAttribute('id','name_'+currentFilterNumber);
+        newInputField.setAttribute('placeholder','Device Name');
+        newDiv.appendChild(newInputField);
+
+        newInputField = document.createElement('input');
+        newInputField.setAttribute('id','namePrefix_'+currentFilterNumber);
+        newInputField.setAttribute('placeholder','Device Name Prefix');
+        newDiv.appendChild(newInputField);
+
+        document.getElementById('filters').appendChild(newDiv);
+    }
+
+    function findDevice() {
+        clear();
+        var options = {filters: [{}], optionalServices: []};
+
+        for (var i = 1; i <= currentFilterNumber; ++i) {
+            if(!options.filters[i-1]) {
+                options.filters[i-1] = {};
+            }
+            var filterService = document.getElementById('service_'+i).value;
+            if (filterService) {
+                if (filterService.startsWith('0x'))
+                  filterService = parseInt(filterService, 16);
+                options.filters[i-1].services = [filterService];
+            }
+
+            var filterName = document.getElementById('name_'+i).value;
+            if (filterName)
+                options.filters[i-1].name = filterName;
+
+            var filterNamePrefix = document.getElementById('namePrefix_'+i).value;
+            if (filterNamePrefix)
+                options.filters[i-1].namePrefix = filterNamePrefix;
+        }
+
+        var optionalServices = document.getElementById('optionalServices').value;
+        if (optionalServices) {
+            optionalServices = optionalServices.split(" ");
+            for(var i = 0; i < optionalServices.length; ++i) {
+                if(optionalServices[i].startsWith('0x'))
+                    optionalServices[i] = parseInt(optionalServices[i], 16);
+            }
+            options.optionalServices = optionalServices;
+        }
+        try {
+            log('Requesting Bluetooth Device...');
+            device = window.navigator.bluetooth.requestDevice(options);
+
+            log('Connecting to GATTserver on device...');
+            server = device.gatt.connect();
+            document.getElementById('content').innerHTML = '<div id="params"><p id="title">Currently connected to GATT Server</p><input id="requested" type="text"><div><button type="button" onclick="getPrimaryService()">Get Primary Service</button><button type="button" onclick="getAndListPrimaryServices()">List Primary Services on Server</button></div></div><pre id="log"></pre>';
+        } catch(err) {
+            log(err);
+        }
+    }
+
+    function getPrimaryService() {
+        clear();
+        var requestedService = document.getElementById('requested').value;
+        try {
+            if(requestedService) {
+                if(requestedService.startsWith('0x'))
+                    requestedService = parseInt(requestedService, 16);
+                log('Getting Primary Service...');
+                primaryService = server.getPrimaryService(requestedService);
+                log('Primary Service found on device: ' + primaryService.device.name);
+                log('> UUID:                          ' + primaryService.uuid);
+                log('> Is primary:                    ' + primaryService.isPrimary);
+                document.getElementById('title').innerHTML = 'Currently connected to Primary Service (' + document.getElementById('requested').value + ').';
+                if (!document.getElementById('getInclServiceBtn')) {
+                    var newDiv = document.createElement('div');
+                    var getInclServiceBtn = document.createElement("button");
+                    getInclServiceBtn.setAttribute('id','getInclServiceBtn');
+                    getInclServiceBtn.setAttribute('onclick','getIncludedService()');
+                    var getInclServicesBtn = document.createElement("button");
+                    getInclServicesBtn.setAttribute('id','getInclServicesBtn');
+                    getInclServicesBtn.setAttribute('onclick','getAndListIncludedServices()');
+                    newDiv.appendChild(getInclServiceBtn);
+                    newDiv.appendChild(getInclServicesBtn);
+                    document.getElementById('params').appendChild(newDiv);
+                    document.getElementById('getInclServiceBtn').innerHTML = 'Get Included Service';
+                    document.getElementById('getInclServicesBtn').innerHTML = 'Get Included Services';
+                }
+
+                if (!document.getElementById('getCharBtn')) {
+                    var newDiv = document.createElement('div');
+                    var getCharBtn = document.createElement("button");
+                    getCharBtn.setAttribute('id','getCharBtn');
+                    getCharBtn.setAttribute('onclick','findAndReadCharacteristic()');
+                    newDiv.appendChild(getCharBtn);
+                    document.getElementById('params').appendChild(newDiv);
+                    document.getElementById('getCharBtn').innerHTML = 'Read Characteristic';
+                }
+                if (!document.getElementById('writeBtn')) {
+                    var newDiv = document.createElement('div');
+                    var writeBtn = document.createElement("button");
+                    var inputField = document.createElement('input');
+                    inputField.setAttribute('type','text');
+                    inputField.setAttribute('id','newValue');
+                    inputField.setAttribute('placeholder','New value');
+                    writeBtn.setAttribute('id','writeBtn');
+                    writeBtn.setAttribute('onclick','writeCharacteristicValue()');
+                    newDiv.appendChild(writeBtn);
+                    newDiv.appendChild(inputField);
+                    document.getElementById('params').appendChild(newDiv);
+                    document.getElementById('writeBtn').innerHTML = 'Write Characteristic';
+                }
+                if (!document.getElementById('getCharsBtn')) {
+                    var newDiv = document.createElement('div');
+                    var getCharsBtn = document.createElement("button");
+                    getCharsBtn.setAttribute('id','getCharsBtn');
+                    getCharsBtn.setAttribute('onclick','findAndListCharacteristics()');
+                    newDiv.appendChild(getCharsBtn);
+                    document.getElementById('params').appendChild(newDiv);;
+                    document.getElementById('getCharsBtn').innerHTML = 'List Characteristics';
+                }
+            } else {
+                log('Text field not filled!');
+            }
+        } catch(err) {
+            log(err);
+        }
+    }
+
+
+    function getAndListPrimaryServices() {
+        clear();
+        var requestedService = document.getElementById('requested').value;
+        try {
+            if(requestedService) {
+                if(requestedService.startsWith('0x'))
+                    var requestedService = parseInt(requestedService, 16);
+                log('Searching for the requested Services...');
+                var primaryServices = server.getPrimaryServices(requestedService);
+                log('> List of Services, with the given Service (' + document.getElementById('requested').value + ') on the current GATT Server:')
+                for(i = 0; i < primaryServices.length; ++i) {
+                    log('> #' + (i+1) + ": " + primaryServices[i].uuid);
+                }
+            } else {
+                log('Searching for Services without any Service name/UUID supplied...');
+                var primaryServices = server.getPrimaryServices();
+                log('> List of Services on the current GATT Server:');
+                for(i = 0; i < primaryServices.length; ++i) {
+                    log('> #' + (i+1) + ": " + primaryServices[i].uuid);
+                }
+            }
+        } catch(err) {
+            log(err);
+        }
+    }
+
+    function getIncludedService() {
+        clear();
+        var requestedService = document.getElementById('requested').value;
+        try {
+            if(requestedService) {
+                if(requestedService.startsWith('0x'))
+                    requestedService = parseInt(requestedService, 16);
+                log('Getting Included Service...');
+                var includedService = primaryService.getIncludedService(requestedService);
+                log('Included Service found on device: ' + includedService.device.name);
+                log('> UUID:                          ' + includedService.uuid);
+                log('> Is primary:                    ' + includedService.isPrimary);
+                document.getElementById('title').innerHTML = 'Currently connected to Service (' + document.getElementById('requested').value + ').';
+            }
+        } catch(err) {
+            log(err);
+        }
+    }
+
+    function getAndListIncludedServices() {
+        clear();
+        var requestedService = document.getElementById('requested').value;
+        try {
+            if(requestedService) {
+                if(requestedService.startsWith('0x'))
+                    var requestedService = parseInt(requestedService, 16);
+                log('Searching for the requested Services...');
+                var includedServices = primaryService.getIncludedServices(requestedService);
+                log('> List of Included Services, with the given Service (' + document.getElementById('requested').value + ') for the current Primary Service (' + primaryService.uuid + '):')
+                for(i = 0; i < includedServices.length; ++i) {
+                    log('> #' + (i+1) + ": " + includedServices[i].uuid);
+                }
+            } else {
+                log('Searching for Services...');
+                var includedServices = primaryService.getIncludedServices();
+                log('> List of Included Services on the current GATT Server for the current Primary Service (' + primaryService.uuid + '):');
+                for(i = 0; i < includedServices.length; ++i) {
+                    log('> #' + (i+1) + ": " + includedServices[i].uuid);
+                }
+            }
+        } catch(err) {
+            log(err);
+        }
+    }
+
+    function findAndReadCharacteristic() {
+        clear();
+        var requestedCharacteristic = document.getElementById('requested').value;
+        try {
+            if(requestedCharacteristic) {
+                if(requestedCharacteristic.startsWith('0x'))
+                    requestedCharacteristic = parseInt(requestedCharacteristic, 16);
+                log('Searching for the requested Characteristic...');
+                characteristic = primaryService.getCharacteristic(requestedCharacteristic);
+                log("Reading the Characteristic's Value...");
+                var value = asciiToDecimal(characteristic.readValue());
+                log("> Characteristic's value is:" + value);
+            } else {
+                log("Text field not filled!");
+            }
+        } catch(err) {
+            log(err);
+        }
+    }
+
+    function findAndListCharacteristics() {
+        clear();
+        var requestedCharacteristic = document.getElementById('requested').value;
+        try {
+            if(requestedCharacteristic) {
+                if(requestedCharacteristic.startsWith('0x'))
+                    requestedCharacteristic = parseInt(requestedCharacteristic, 16);
+                log('Searching for the requested Characteristic...');
+                characteristics = primaryService.getCharacteristics(requestedCharacteristic);
+                log('> List of the Characteristics, with the given Characteristic (' + document.getElementById('requested').value + ') in the current Service:');
+                for(i = 0; i < characteristics.length; ++i) {
+                    log('> #' + (i+1) + ": " + characteristics[i].uuid);
+                }
+            } else {
+                log('Searching for Characteristics without Characteristic name/UUID supplied...');
+                var characteristics = primaryService.getCharacteristics();
+                log('> List of Characteristics in the current Service:');
+                for(i = 0; i < characteristics.length; ++i) {
+                    log('> #' + (i+1) + ": " + characteristics[i].uuid);
+                }
+            }
+        } catch(err) {
+            log(err);
+        }
+    }
+
+    function writeCharacteristicValue() {
+        clear();
+        var requestedCharacteristic = document.getElementById('requested').value;
+        var newValue = document.getElementById('newValue').value;
+        if (newValue && requestedCharacteristic) {
+            try {
+                log('Searching for the Characteristic...');
+                characteristic = primaryService.getCharacteristic(requestedCharacteristic);
+                log("Writing the Characteristic's Value...");
+                characteristic.writeValue(decimalToASCII(newValue));
+                log("> Characteristic's value is:" + value);
+            } catch(err) {
+                log(err);
+            }
+        }
+    }
+
+    function clear() {
+        document.getElementById("log").textContent = "";
+    }
+
+    function log(line) {
+        document.getElementById("log").textContent += line + '\n';
+    }
+
+    function asciiToDecimal(byteStr) {
+        var result = [];
+        for(i = 0; i < byteStr.length; i++) {
+            result[i] = byteStr[i].charCodeAt(0) ;
+        }
+        return result;
+    }
+
+    function decimalToASCII(inputStr) {
+        return String.fromCharCode(inputStr);
+    }
+    </script>
+</body>
+</html>
