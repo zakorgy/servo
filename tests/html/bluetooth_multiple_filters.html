@@ -148,7 +148,6 @@
             button.setAttribute('onmouseout', 'clearHint()');
             button.innerHTML = "  ⓧ  " + serviceName;
             document.getElementById('services_' + filterNumber).appendChild(button);
-            requestedServicesSet.add(serviceName);
         }
     }
 
@@ -168,7 +167,6 @@
             button.setAttribute('onmouseout', 'clearHint()');
             button.innerHTML = "  ⓧ  " + serviceName;
             document.getElementById('optionalServices').appendChild(button);
-            requestedServicesSet.add(serviceName);
         }
     }
 
@@ -270,6 +268,7 @@
                 if(serviceName.startsWith('0x'))
                     serviceName = parseInt(serviceName, 16);
                 options.filters[i-1].services.push(serviceName);
+                requestedServicesSet.add(serviceName);
                 serviceBtn = serviceBtn.nextSibling;
             }
 
@@ -288,6 +287,7 @@
             if(serviceName.startsWith('0x'))
                 serviceName = parseInt(serviceName,16);
             options.optionalServices.push(serviceName);
+            requestedServicesSet.add(serviceName);
             optServiceBtn = optServiceBtn.nextSibling;
         }
 
