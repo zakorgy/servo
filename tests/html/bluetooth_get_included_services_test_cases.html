@@ -17,13 +17,13 @@
 //Test 5
     testCases.push({ requestedService: 'battery_service', requestedIncludedService: '00000000-0000-0000-0000-000000000000', options: {filters: [{services: ['battery_service']}]} });
 //Test 6
-    testCases.push({ requestedService: 'battery_service', requestedIncludedService: '0x0000', options: {filters: [{services: ['battery_service']}]} });
+    testCases.push({ requestedService: 'battery_service', requestedIncludedService: 0x0000, options: {filters: [{services: ['battery_service']}]} });
 //Test 7
-    testCases.push({ requestedService: 'battery_service', requestedIncludedService: '0x00000000', options: {filters: [{services: ['battery_service']}]} });
+    testCases.push({ requestedService: 'battery_service', requestedIncludedService: 0x00000000, options: {filters: [{services: ['battery_service']}]} });
 //Test 8
-    testCases.push({ requestedService: 'battery_service', requestedIncludedService: '0x12345678', options: {filters: [{services: ['battery_service']}]} });
+    testCases.push({ requestedService: 'battery_service', requestedIncludedService: 0x12345678, options: {filters: [{services: ['battery_service']}]} });
 //Test 9
-    testCases.push({ requestedService: 'battery_service', requestedIncludedService: '0x0000180f', options: {filters: [{services: ['battery_service']}]} });
+    testCases.push({ requestedService: 'battery_service', requestedIncludedService: 0x0000180f, options: {filters: [{services: ['battery_service']}]} });
 //Test 10
     testCases.push({ requestedService: 'battery_service', requestedIncludedService: '00001812-0000-1000-8000-00805f9b34fb', options: {filters: [{services: ['battery_service']}]} });
 //Test 11
@@ -31,11 +31,11 @@
 //Test 12
     testCases.push({ requestedService: 'battery_service', requestedIncludedService: '00001530-1212-efde-1523-785feabcd123', options: {filters: [{services: ['battery_service']}]} });
 //Test 13
-    testCases.push({ requestedService: 'battery_service', requestedIncludedService: '0x00001812', options: {filters: [{services: ['battery_service']}]} });
+    testCases.push({ requestedService: 'battery_service', requestedIncludedService: 0x00001812, options: {filters: [{services: ['battery_service']}]} });
 //Test 14
-    testCases.push({ requestedService: 'battery_service', requestedIncludedService: '0xf000ffc0', options: {filters: [{services: ['battery_service']}]} });
+    testCases.push({ requestedService: 'battery_service', requestedIncludedService: 0xf000ffc0, options: {filters: [{services: ['battery_service']}]} });
 //Test 15
-    testCases.push({ requestedService: 'battery_service', requestedIncludedService: '0x00001530', options: {filters: [{services: ['battery_service']}]} });
+    testCases.push({ requestedService: 'battery_service', requestedIncludedService: 0x00001530, options: {filters: [{services: ['battery_service']}]} });
     function onButtonClick(testNumber) {
         clear();
         try {
@@ -49,7 +49,7 @@
             var primaryService = server.getPrimaryService(testCases[testNumber].requestedService);
 
             log('Getting Included Service "' + testCases[testNumber].requestedIncludedService + '"...')
-            var includedServices = primaryService.GetIncludedServices(testCases[testNumber].requestedIncludedService);
+            var includedServices = primaryService.getIncludedServices(testCases[testNumber].requestedIncludedService);
 
             for(i = 0; i < includedServices.length; ++i) {
                 log('> #' + (i+1));
