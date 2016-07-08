@@ -4,26 +4,27 @@
 <body>
     <div id="buttons">
         <button onclick="onButtonClick2()">Test 1</button>
-        <button onclick="onButtonClick3()">Test 2</button>
     </div>
     <pre id="log"></pre>
     <script>
     var testCases = [];
 //Test 1
-    testCases.push({characteristic: 'gap.reconnection_address', valueToWrite: [1]});
+    testCases.push({characteristic: 0x2345, valueToWrite: new Array(513)})
 //Test 2
-    testCases.push({characteristic: 'serial_number_string', valueToWrite: [2]});
+    testCases.push({characteristic: 'gap.reconnection_address', valueToWrite: [1]});
 //Test 3
-    testCases.push({characteristic: 0x00002a02, valueToWrite: [3]});
+    testCases.push({characteristic: 'serial_number_string', valueToWrite: [2]});
 //Test 4
-    testCases.push({characteristic: 0x00002a03, valueToWrite: [3]});
+    testCases.push({characteristic: 0x00002a02, valueToWrite: [3]});
 //Test 5
-    testCases.push({characteristic: 0x00002a25, valueToWrite: [4]});
+    testCases.push({characteristic: 0x00002a03, valueToWrite: [3]});
 //Test 6
-    testCases.push({characteristic: '00002a02-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
+    testCases.push({characteristic: 0x00002a25, valueToWrite: [4]});
 //Test 7
-    testCases.push({characteristic: '00002a03-0000-1000-8000-00805f9b34fb', valueToWrite: [5]});
+    testCases.push({characteristic: '00002a02-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
 //Test 8
+    testCases.push({characteristic: '00002a03-0000-1000-8000-00805f9b34fb', valueToWrite: [5]});
+//Test 9
     testCases.push({characteristic: '00002a25-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
 //Test 10
     testCases.push({characteristic: 0x2345, valueToWrite: [11]});
@@ -50,7 +51,11 @@
             characteristic.readValue();
             log('> Characteristic value:   ' + AsciiToDecimal(characteristic.value));
 
-            log('Writing the value of the Characteristic with: ' + testCases[testNumber].valueToWrite + '...');
+            if (testNumber !== 0)
+                log('Writing the value of the Characteristic with: ' + testCases[testNumber].valueToWrite + '...');
+            else 
+                log('Writing the value of the Characteristic with a 513 long array...');
+
             characteristic.writeValue(testCases[testNumber].valueToWrite);
 
             log('Reading the new value of the Characteristic...');
@@ -91,40 +96,6 @@
         }
     }
 
-    function onButtonClick3() {
-        clear();
-        try {
-            log('Requesting Bluetooth Device...');
-            var device = window.navigator.bluetooth.requestDevice({filters: [{services: [0x1234]}]});
-
-            log('Connecting to GATTserver on device...');
-            var server = device.gatt.connect();
-
-            log('Getting Primary Service "Test Service"...');
-            var primaryService = server.getPrimaryService(0x1234);
-
-            log('Getting Characteristic "0x2345"...');
-            var characteristic = primaryService.getCharacteristic(0x2345);
-
-            valueToWrite = [];
-
-            for (var i = 0; i <= 512; i++) {
-                valueToWrite.push(i);
-            }
-
-            log('Characteristic found!');
-            log('Writing the value of the Characteristic with a 513 long array...');
-            characteristic.writeValue(valueToWrite);
-
-            log('Reading the value of the Characteristic...');
-            characteristic.readValue();
-            log('> Characteristic value:   ' + AsciiToDecimal(characteristic.value));
-
-        } catch(err) {
-            log(err);
-        }
-    }
-
     function clear() {
         document.getElementById("log").textContent = "";
     }
@@ -136,7 +107,7 @@
     for(i = 0; i < testCases.length; ++i) {
         var btn = document.createElement('button');
         btn.setAttribute('onclick','onButtonClick(' + i + ')');
-        btn.innerHTML = 'Test '+ (i+3);
+        btn.innerHTML = 'Test '+ (i+2);
         document.getElementById('buttons').appendChild(btn);
     }
 
