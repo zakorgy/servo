@@ -53,7 +53,7 @@
 
             if (testNumber !== 0)
                 log('Writing the value of the Characteristic with: ' + testCases[testNumber].valueToWrite + '...');
-            else 
+            else
                 log('Writing the value of the Characteristic with a 513 long array...');
 
             characteristic.writeValue(testCases[testNumber].valueToWrite);
