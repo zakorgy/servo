@@ -538,11 +538,14 @@
         var newValue = document.getElementById('newValue').value;
         if (newValue && requestedCharacteristic) {
             try {
+                if(requestedCharacteristic.startsWith('0x'))
+                    requestedCharacteristic = parseInt(requestedCharacteristic, 16);
                 log('Searching for the Characteristic...');
                 characteristic = primaryService.getCharacteristic(requestedCharacteristic);
                 log("Writing the Characteristic's Value...");
-                characteristic.writeValue(decimalToASCII(newValue));
-                log("> Characteristic's value is:" + value);
+                characteristic.writeValue(convertToArray(newValue));
+                characteristic.readValue();
+                log("> Characteristic's value is:" + asciiToDecimal(characteristic.value));
             } catch(err) {
                 log(err);
             }
@@ -574,13 +577,13 @@
         return result;
     }
 
-    function decimalToASCII(inputStr) {
-        var splitString = inputStr.split("");
-        var result = [];
+    function convertToArray(inputStr) {
+        var splitString = inputStr.split(/[\s,]+/);
         for(i = 0; i < splitString.length; i++) {
-            result[i] = String.fromCharCode(splitString[i]);
+            if ((isNaN(splitString[i])) || (splitString[i] > 255) || (splitString[i] < 0))
+                throw 'Only numbers between 0 and 255 are accepted';
         }
-        return result;
+        return splitString;
     }
     </script>
 </body>
