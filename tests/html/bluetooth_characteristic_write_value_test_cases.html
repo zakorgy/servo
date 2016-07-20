@@ -8,27 +8,27 @@
     <pre id="log"></pre>
     <script>
     var testCases = [];
-//Test 1
-    testCases.push({characteristic: 0x2345, valueToWrite: new Array(513)})
 //Test 2
-    testCases.push({characteristic: 'gap.reconnection_address', valueToWrite: [1]});
+    testCases.push({characteristic: 0x2345, valueToWrite: new Array(513)})
 //Test 3
-    testCases.push({characteristic: 'serial_number_string', valueToWrite: [2]});
+    testCases.push({characteristic: 'gap.reconnection_address', valueToWrite: [1]});
 //Test 4
-    testCases.push({characteristic: 0x00002a02, valueToWrite: [3]});
+    testCases.push({characteristic: 'serial_number_string', valueToWrite: [2]});
 //Test 5
-    testCases.push({characteristic: 0x00002a03, valueToWrite: [3]});
+    testCases.push({characteristic: 0x00002a02, valueToWrite: [3]});
 //Test 6
-    testCases.push({characteristic: 0x00002a25, valueToWrite: [4]});
+    testCases.push({characteristic: 0x00002a03, valueToWrite: [3]});
 //Test 7
-    testCases.push({characteristic: '00002a02-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
+    testCases.push({characteristic: 0x00002a25, valueToWrite: [4]});
 //Test 8
-    testCases.push({characteristic: '00002a03-0000-1000-8000-00805f9b34fb', valueToWrite: [5]});
+    testCases.push({characteristic: '00002a02-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
 //Test 9
-    testCases.push({characteristic: '00002a25-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
+    testCases.push({characteristic: '00002a03-0000-1000-8000-00805f9b34fb', valueToWrite: [5]});
 //Test 10
-    testCases.push({characteristic: 0x2345, valueToWrite: [11]});
+    testCases.push({characteristic: '00002a25-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
 //Test 11
+    testCases.push({characteristic: 0x2345, valueToWrite: [11]});
+//Test 12
     testCases.push({characteristic: '00002345-0000-1000-8000-00805f9b34fb', valueToWrite: [22]});
     function onButtonClick(testNumber) {
         clear();
