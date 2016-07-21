@@ -2,34 +2,10 @@
 <html>
 <title>Characterstic's WriteValue Test Cases</title>
 <body>
-    <div id="buttons">
-        <button onclick="onButtonClick2()">Test 1</button>
-    </div>
+    <div id="buttons"></div>
     <pre id="log"></pre>
+    <script src="bluetooth_functions.js"></script>
     <script>
-    var testCases = [];
-//Test 2
-    testCases.push({characteristic: 0x2345, valueToWrite: new Array(513)})
-//Test 3
-    testCases.push({characteristic: 'gap.reconnection_address', valueToWrite: [1]});
-//Test 4
-    testCases.push({characteristic: 'serial_number_string', valueToWrite: [2]});
-//Test 5
-    testCases.push({characteristic: 0x00002a02, valueToWrite: [3]});
-//Test 6
-    testCases.push({characteristic: 0x00002a03, valueToWrite: [3]});
-//Test 7
-    testCases.push({characteristic: 0x00002a25, valueToWrite: [4]});
-//Test 8
-    testCases.push({characteristic: '00002a02-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
-//Test 9
-    testCases.push({characteristic: '00002a03-0000-1000-8000-00805f9b34fb', valueToWrite: [5]});
-//Test 10
-    testCases.push({characteristic: '00002a25-0000-1000-8000-00805f9b34fb', valueToWrite: [6]});
-//Test 11
-    testCases.push({characteristic: 0x2345, valueToWrite: [11]});
-//Test 12
-    testCases.push({characteristic: '00002345-0000-1000-8000-00805f9b34fb', valueToWrite: [22]});
     function onButtonClick(testNumber) {
         clear();
         try {
@@ -42,8 +18,8 @@
             log('Getting Primary Service "Test Service"...');
             var primaryService = server.getPrimaryService(0x1234);
 
-            log('Getting Characteristic "' + testCases[testNumber].characteristic + '"...');
-            var characteristic = primaryService.getCharacteristic(testCases[testNumber].characteristic);
+            log('Getting Characteristic "' + characteristicWriteValueTestCases[testNumber].characteristic + '"...');
+            var characteristic = primaryService.getCharacteristic(characteristicWriteValueTestCases[testNumber].characteristic);
 
             log('Characteristic found!');
 
@@ -51,12 +27,17 @@
             characteristic.readValue();
             log('> Characteristic value:   ' + AsciiToDecimal(characteristic.value));
 
-            if (testNumber !== 0)
-                log('Writing the value of the Characteristic with: ' + testCases[testNumber].valueToWrite + '...');
+            if(characteristicWriteValueTestCases[testNumber].mustDisconnect){
+                log('Disconnecting from server...');
+                device.gatt.disconnect();
+            }
+
+            if (testNumber !== 1)
+                log('Writing the value of the Characteristic with: ' + characteristicWriteValueTestCases[testNumber].valueToWrite + '...');
             else
                 log('Writing the value of the Characteristic with a 513 long array...');
 
-            characteristic.writeValue(testCases[testNumber].valueToWrite);
+            characteristic.writeValue(characteristicWriteValueTestCases[testNumber].valueToWrite);
 
             log('Reading the new value of the Characteristic...');
             characteristic.readValue();
@@ -67,57 +48,7 @@
         }
     }
 
-    function onButtonClick2() {
-        clear();
-        try {
-            log('Requesting Bluetooth Device...');
-            var device = window.navigator.bluetooth.requestDevice({filters: [{services: [0x1234]}]});
-
-            log('Connecting to GATTserver on device...');
-            var server = device.gatt.connect();
-
-            log('Getting Primary Service "Test Service"...');
-            var primaryService = server.getPrimaryService(0x1234);
-
-            log('Getting Characteristic "Test Characteristic"...');
-            var characteristic = primaryService.getCharacteristic(0x2345);
-
-            log('Characteristic found!');
-
-            log('Disconnecting from server...');
-            device.gatt.disconnect();
-
-            log('Writing the value of the Characteristic...');
-            characteristic.writeValue([11]);
-            log('> Characteristic value:   ' + AsciiToDecimal(characteristic.value));
-
-        } catch(err) {
-            log(err);
-        }
-    }
-
-    function clear() {
-        document.getElementById("log").textContent = "";
-    }
-
-    function log(line) {
-        document.getElementById("log").textContent += line + '\n';
-    }
-
-    for(i = 0; i < testCases.length; ++i) {
-        var btn = document.createElement('button');
-        btn.setAttribute('onclick','onButtonClick(' + i + ')');
-        btn.innerHTML = 'Test '+ (i+2);
-        document.getElementById('buttons').appendChild(btn);
-    }
-
-    function AsciiToDecimal(bytestr) {
-        var result = [];
-        for(i = 0; i < bytestr.length; i++) {
-            result[i] = bytestr[i].charCodeAt(0) ;
-        }
-        return result;
-    }
+    populate(characteristicWriteValueTestCases);
     </script>
 </body>
 </html>

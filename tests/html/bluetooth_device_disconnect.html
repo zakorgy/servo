@@ -9,6 +9,7 @@
     <button type="button" onclick="onDisconnectButtonClick()">Disconnect()</button>
     <button type="button" onclick="onReconnectButtonClick()">Reconnect()</button>
     <pre id="log"></pre>
+    <script src="bluetooth_functions.js"></script>
     <script>
     var bluetoothDevice;
 
@@ -80,14 +81,6 @@
         } catch(err) {
             log(timeStamp() + err);
         }
-    }
-
-    function clear() {
-        document.getElementById("log").textContent = "";
-    }
-
-    function log(line) {
-        document.getElementById("log").textContent += line + '\n';
     }
 
     function timeStamp() {

@@ -5,6 +5,7 @@
     <div id="buttons"></div>
     <button onclick="onButtonClick2()">Test 12</button>
     <pre id="log"></pre>
+    <script src="bluetooth_functions.js"></script>
     <script>
     var testCases = [];
 //Test 1
@@ -88,28 +89,7 @@
         }
     }
 
-    function clear() {
-        document.getElementById("log").textContent = "";
-    }
-
-    function log(line) {
-        document.getElementById("log").textContent += line + '\n';
-    }
-
-    for(i = 0; i < testCases.length; ++i) {
-        var btn = document.createElement('button');
-        btn.setAttribute('onclick','onButtonClick(' + i + ')');
-        btn.innerHTML = 'Test '+ (i+1);
-        document.getElementById('buttons').appendChild(btn);
-    }
-
-    function AsciiToDecimal(bytestr) {
-        var result = [];
-        for(i = 0; i < bytestr.length; i++) {
-            result[i] = bytestr[i].charCodeAt(0) ;
-        }
-        return result;
-    }
+    populate(testCases);
     </script>
 </body>
 </html>

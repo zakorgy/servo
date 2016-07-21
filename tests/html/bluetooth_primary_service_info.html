@@ -7,6 +7,7 @@
     <input id="namePrefix" type="text" placeholder="Device Name Prefix">
     <button type="button" onclick="onButtonClick()">Get Primary Service Info</button>
     <pre id="log"></pre>
+    <script src="bluetooth_functions.js"></script>
     <script>
     function onButtonClick() {
         clear();
@@ -43,14 +44,6 @@
         } catch(err) {
             log(err);
         }
-    }
-
-    function clear() {
-        document.getElementById("log").textContent = "";
-    }
-
-    function log(line) {
-        document.getElementById("log").textContent += line + '\n';
     }
     </script>
 </body>

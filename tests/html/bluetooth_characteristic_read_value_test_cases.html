@@ -2,30 +2,10 @@
 <html>
 <title>Characterstic's ReadValue Test Cases</title>
 <body>
-    <div id="buttons"><button onclick="onButtonClick2()">Test 1</button></div>
+    <div id="buttons"></div>
     <pre id="log"></pre>
+    <script src="bluetooth_functions.js"></script>
     <script>
-    var testCases = [];
-//Test 1
-    testCases.push('gap.reconnection_address');
-//Test 2
-    testCases.push('serial_number_string');
-//Test 3
-    testCases.push(0x00002a03);
-//Test 4
-    testCases.push(0x00002a25);
-//Test 5
-    testCases.push('00002a03-0000-1000-8000-00805f9b34fb');
-//Test 6
-    testCases.push('00002a25-0000-1000-8000-00805f9b34fb');
-//Test 7
-    testCases.push('body_sensor_location');
-//Test 8
-    testCases.push(0x00002a38);
-//Test 9
-    testCases.push('00002a38-0000-1000-8000-00805f9b34fb');
-//Test 10
-    testCases.push('heart_rate_control_point');
     function onButtonClick(testNumber) {
         clear();
         try {
@@ -38,38 +18,15 @@
             log('Getting Primary Service "heart_rate"...');
             var primaryService = server.getPrimaryService('heart_rate');
 
-            log('Getting Characteristic "' + testCases[testNumber] + '"...');
-            var characteristic = primaryService.getCharacteristic(testCases[testNumber]);
-
-            log('Characteristic found!');
-            log('Reading the value of the Characteristic...');
-            characteristic.readValue();
-            log('> Characteristic value:   ' + AsciiToDecimal(characteristic.value));
-
-        } catch(err) {
-            log(err);
-        }
-    }
-
-    function onButtonClick2() {
-        clear();
-        try {
-            log('Requesting Bluetooth Device...');
-            var device = window.navigator.bluetooth.requestDevice({filters: [{services: ['heart_rate']}]});
-
-            log('Connecting to GATTserver on device...');
-            var server = device.gatt.connect();
-
-            log('Getting Primary Service "heart_rate"...');
-            var primaryService = server.getPrimaryService('heart_rate');
-
-            log('Getting Characteristic "body_sensor_location"...');
-            var characteristic = primaryService.getCharacteristic('body_sensor_location');
+            log('Getting Characteristic "' + characteristicReadValueTestCases[testNumber].characteristic + '"...');
+            var characteristic = primaryService.getCharacteristic(characteristicReadValueTestCases[testNumber].characteristic);
 
             log('Characteristic found!');
 
-            log('Disconnecting from server...');
-            device.gatt.disconnect();
+            if(characteristicReadValueTestCases[testNumber].mustDisconnect){
+                log('Disconnecting from server...');
+                device.gatt.disconnect();
+            }
 
             log('Reading the value of the Characteristic...');
             characteristic.readValue();
@@ -80,28 +37,7 @@
         }
     }
 
-    function clear() {
-        document.getElementById("log").textContent = "";
-    }
-
-    function log(line) {
-        document.getElementById("log").textContent += line + '\n';
-    }
-
-    for(i = 0; i < testCases.length; ++i) {
-        var btn = document.createElement('button');
-        btn.setAttribute('onclick','onButtonClick(' + i + ')');
-        btn.innerHTML = 'Test '+ (i+2);
-        document.getElementById('buttons').appendChild(btn);
-    }
-
-    function AsciiToDecimal(bytestr) {
-        var result = [];
-        for(i = 0; i < bytestr.length; i++) {
-            result[i] = bytestr[i].charCodeAt(0) ;
-        }
-        return result;
-    }
+    populate(characteristicReadValueTestCases);
     </script>
 </body>
 </html>

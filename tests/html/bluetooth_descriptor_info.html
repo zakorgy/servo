@@ -7,6 +7,7 @@
     <input id="descriptor" type="text" autofocus placeholder="Bluetooth Descriptor">
     <button type="button" onclick="onButtonClick()">Get Descriptor Info</button>
     <pre id="log"></pre>
+    <script src="bluetooth_functions.js"></script>
     <script>
     function onButtonClick() {
         clear();
@@ -50,22 +51,6 @@
         } catch(err) {
             log(err);
         }
-    }
-
-    function clear() {
-        document.getElementById("log").textContent = "";
-    }
-
-    function log(line) {
-        document.getElementById("log").textContent += line + '\n';
-    }
-
-    function AsciiToDecimal(bytestr) {
-        var result = [];
-        for(i = 0; i < bytestr.length; i++) {
-            result[i] = bytestr[i].charCodeAt(0) ;
-        }
-        return result;
     }
     </script>
 </body>
