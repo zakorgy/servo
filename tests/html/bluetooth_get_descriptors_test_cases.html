@@ -30,6 +30,8 @@
     testCases.push(0x12345678);
 //Test 11
     testCases.push(0x00002902);
+//Test 12
+    testCases.push(undefined);
 
     function onButtonClick(testNumber) {
         clear();
@@ -48,35 +50,6 @@
 
             log('Getting Descriptors "' + testCases[testNumber] + '"...');
             var descriptors = characteristic.getDescriptors(testCases[testNumber]);
-
-            for(i = 0; i < descriptors.length; ++i) {
-                log('> #' + (i+1));
-                log('> UUID:                      ' + descriptors[i].uuid);
-                    descriptors[i].readValue();
-                log('> Descriptor value:          ' + AsciiToDecimal(descriptors[i].value));
-            }
-        } catch(err) {
-            log(err);
-        }
-    }
-
-    function onButtonClick2() {
-        clear();
-        try {
-            log('Requesting Bluetooth Device...');
-            var device = window.navigator.bluetooth.requestDevice({filters: [{services: ['heart_rate']}]});
-
-            log('Connecting to GATTserver on device...');
-            var server = device.gatt.connect();
-
-            log('Getting Primary Service "heart_rate"...');
-            var primaryService = server.getPrimaryService('heart_rate');
-
-            log('Getting Characteristic "heart_rate_measurement"...');
-            var characteristic = primaryService.getCharacteristic('heart_rate_measurement');
-
-            log('Getting Descriptors...');
-            var descriptors = characteristic.getDescriptors();
 
             for(i = 0; i < descriptors.length; ++i) {
                 log('> #' + (i+1));

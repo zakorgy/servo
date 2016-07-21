@@ -6,6 +6,20 @@
     <pre id="log"></pre>
     <script src="bluetooth_functions.js"></script>
     <script>
+    var testCases = [];
+    //Test 1
+        testCases.push({descriptor: 'gatt.client_characteristic_configuration', mustDisconnect: true});
+    //Test 2
+        testCases.push({descriptor: 0x2902, mustDisconnect: true});
+    //Test 3
+        testCases.push({descriptor: '00002902-0000-1000-8000-00805f9b34fb', mustDisconnect: true});
+    //Test 4
+        testCases.push({descriptor: 'gatt.client_characteristic_configuration', mustDisconnect: false});
+    //Test 5
+        testCases.push({descriptor: 0x2902, mustDisconnect: false});
+    //Test 6
+        testCases.push({descriptor: '00002902-0000-1000-8000-00805f9b34fb', mustDisconnect: false});
+
     function onButtonClick(testNumber) {
         clear();
         try {
@@ -21,11 +35,11 @@
             log('Getting Characteristic "heart_rate_measurement"...');
             var characteristic = primaryService.getCharacteristic('heart_rate_measurement');
 
-            log('Getting Descriptor "' + descriptorReadValueTestCases[testNumber] + '"...');
-            var descriptor = characteristic.getDescriptor(descriptorReadValueTestCases[testNumber].descriptor);
+            log('Getting Descriptor "' + testCases[testNumber].descriptor + '"...');
+            var descriptor = characteristic.getDescriptor(testCases[testNumber].descriptor);
 
             log('Descriptor found!');
-            if (descriptorReadValueTestCases[testNumber].mustDisconnect) {
+            if (testCases[testNumber].mustDisconnect) {
                 log('Disconecting from GATTserver');
                 device.gatt.disconnect();
             }
@@ -38,7 +52,7 @@
         }
     }
 
-    populate(descriptorReadValueTestCases);
+    populate(testCases);
     </script>
 </body>
 </html>
