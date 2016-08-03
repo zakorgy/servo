@@ -38,6 +38,7 @@ use dom::node::{Node, from_untrusted_node_address, window_from_node};
 use dom::performance::Performance;
 use dom::screen::Screen;
 use dom::storage::Storage;
+use dom::testrunner::TestRunner;
 use euclid::{Point2D, Rect, Size2D};
 use gfx_traits::LayerId;
 use ipc_channel::ipc::{self, IpcSender};
@@ -268,6 +269,8 @@ pub struct Window {
 
     /// A list of scroll offsets for each scrollable element.
     scroll_offsets: DOMRefCell<HashMap<UntrustedNodeAddress, Point2D<f32>>>,
+
+    test_runner: MutNullableHeap<JS<TestRunner>>,
 }
 
 impl Window {
@@ -869,6 +872,10 @@ impl WindowMethods for Window {
             Ok(_) => Ok(()),
             Err(e) => Err(Error::Type(format!("Couldn't open URL: {}", e))),
         }
+    }
+
+    fn TestRunner(&self) -> Root<TestRunner> {
+        self.test_runner.or_init(|| TestRunner::new(GlobalRef::Window(self)))
     }
 }
 
@@ -1695,6 +1702,7 @@ impl Window {
             ignore_further_async_events: Arc::new(AtomicBool::new(false)),
             error_reporter: error_reporter,
             scroll_offsets: DOMRefCell::new(HashMap::new()),
+            test_runner: Default::default(),
         };
 
         WindowBinding::Wrap(runtime.cx(), win)
