@@ -243,6 +243,9 @@ impl BluetoothManager {
                 let _ = self.adapter.as_ref().unwrap().set_discoverable(true);
             },
             "FailStartDiscoveryAdapter" => {
+                self.adapter = BluetoothAdapter::init().ok();
+                let _ = self.adapter.as_ref().unwrap().set_name(String::from("FailStartDiscoveryAdapter"));
+                let _ = self.adapter.as_ref().unwrap().set_powered(true);
             },
             "FailStopDiscoveryAdapter" => {
             },
@@ -496,8 +499,9 @@ impl BluetoothManager {
                       sender: IpcSender<BluetoothResult<BluetoothDeviceMsg>>) {
         let mut adapter = get_adapter_or_return_error!(self, sender);
         if let Some(ref session) = adapter.create_discovery_session().ok() {
-            if session.start_discovery().is_ok() {
-                thread::sleep(Duration::from_millis(DISCOVERY_TIMEOUT_MS));
+            match session.start_discovery() {
+                Ok(_) => thread::sleep(Duration::from_millis(DISCOVERY_TIMEOUT_MS)),
+                Err(err) => return drop(sender.send(Err(BluetoothError::Type(err.description().to_owned())))),
             }
             let _ = session.stop_discovery();
         }
