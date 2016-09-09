@@ -16,10 +16,14 @@ use dom::bindings::str::DOMString;
 use dom::bluetoothadvertisingdata::BluetoothAdvertisingData;
 use dom::bluetoothdevice::BluetoothDevice;
 use dom::bluetoothuuid::BluetoothUUID;
+use dom::promise::Promise;
 use ipc_channel::ipc::{self, IpcSender};
+use js::conversions::ToJSValConvertible;
+use js::jsval::UndefinedValue;
 use net_traits::bluetooth_scanfilter::{BluetoothScanfilter, BluetoothScanfilterSequence};
 use net_traits::bluetooth_scanfilter::{RequestDeviceoptions, ServiceUUIDSequence};
 use net_traits::bluetooth_thread::{BluetoothError, BluetoothMethodMsg};
+use std::rc::Rc;
 
 const FILTER_EMPTY_ERROR: &'static str = "'filters' member must be non - empty to find any devices.";
 const FILTER_ERROR: &'static str = "A filter must restrict the devices in some way.";
@@ -58,6 +62,28 @@ impl Bluetooth {
         let global_root = self.global();
         let global_ref = global_root.r();
         global_ref.as_window().bluetooth_thread()
+    }
+
+    fn request_bluetooth_devices(&self, option: &RequestDeviceOptions) -> Fallible<Root<BluetoothDevice>> {
+        let (sender, receiver) = ipc::channel().unwrap();
+        let option = try!(convert_request_device_options(option, self.global().r()));
+        self.get_bluetooth_thread().send(BluetoothMethodMsg::RequestDevice(option, sender)).unwrap();
+        let device = receiver.recv().unwrap();
+        match device {
+            Ok(device) => {
+                let ad_data = BluetoothAdvertisingData::new(self.global().r(),
+                                                            device.appearance,
+                                                            device.tx_power,
+                                                            device.rssi);
+                Ok(BluetoothDevice::new(self.global().r(),
+                                        DOMString::from(device.id),
+                                        device.name.map(DOMString::from),
+                                        &ad_data))
+            },
+            Err(error) => {
+                Err(Error::from(error))
+            },
+        }
     }
 }
 
@@ -149,25 +175,26 @@ impl From<BluetoothError> for Error {
 
 impl BluetoothMethods for Bluetooth {
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetooth-requestdevice
-    fn RequestDevice(&self, option: &RequestDeviceOptions) -> Fallible<Root<BluetoothDevice>> {
-        let (sender, receiver) = ipc::channel().unwrap();
-        let option = try!(convert_request_device_options(option, self.global().r()));
-        self.get_bluetooth_thread().send(BluetoothMethodMsg::RequestDevice(option, sender)).unwrap();
-        let device = receiver.recv().unwrap();
-        match device {
+    #[allow(unrooted_must_root)]
+    #[allow(unsafe_code)]
+    fn RequestDevice(&self, option: &RequestDeviceOptions) -> Fallible<Rc<Promise>> {
+        match self.request_bluetooth_devices(option) {
             Ok(device) => {
-                let ad_data = BluetoothAdvertisingData::new(self.global().r(),
-                                                            device.appearance,
-                                                            device.tx_power,
-                                                            device.rssi);
-                Ok(BluetoothDevice::new(self.global().r(),
-                                        DOMString::from(device.id),
-                                        device.name.map(DOMString::from),
-                                        &ad_data))
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    device.to_jsval(cx, v.handle_mut());
+                }
+                Promise::Resolve(self.global().r(), cx, v.handle())
             },
             Err(error) => {
-                Err(Error::from(error))
-            },
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    error.to_jsval(cx, self.global().r(), v.handle_mut());
+                }
+                Promise::Reject(self.global().r(), cx, v.handle())
+            }
         }
     }
 }
