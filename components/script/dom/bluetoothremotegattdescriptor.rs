@@ -18,8 +18,12 @@ use dom::bindings::js::{JS, MutHeap, Root};
 use dom::bindings::reflector::{Reflectable, Reflector, reflect_dom_object};
 use dom::bindings::str::{ByteString, DOMString};
 use dom::bluetoothremotegattcharacteristic::{BluetoothRemoteGATTCharacteristic, MAXIMUM_ATTRIBUTE_LENGTH};
+use dom::promise::Promise;
 use ipc_channel::ipc::{self, IpcSender};
+use js::conversions::ToJSValConvertible;
+use js::jsval::UndefinedValue;
 use net_traits::bluetooth_thread::BluetoothMethodMsg;
+use std::rc::Rc;
 
 // http://webbluetoothcg.github.io/web-bluetooth/#bluetoothremotegattdescriptor
 #[dom_struct]
@@ -66,26 +70,9 @@ impl BluetoothRemoteGATTDescriptor {
     fn get_instance_id(&self) -> String {
         self.instanceID.clone()
     }
-}
-
-impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-characteristic
-    fn Characteristic(&self) -> Root<BluetoothRemoteGATTCharacteristic> {
-       self.characteristic.get()
-    }
-
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-uuid
-    fn Uuid(&self) -> DOMString {
-        self.uuid.clone()
-    }
-
-     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-value
-    fn GetValue(&self) -> Option<ByteString> {
-        self.value.borrow().clone()
-    }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-readvalue
-    fn ReadValue(&self) -> Fallible<ByteString> {
+    fn read_value(&self) -> Fallible<ByteString> {
         if uuid_is_blacklisted(self.uuid.as_ref(), Blacklist::Reads) {
             return Err(Security)
         }
@@ -109,7 +96,7 @@ impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-writevalue
-    fn WriteValue(&self, value: Vec<u8>) -> ErrorResult {
+    fn write_value(&self, value: Vec<u8>) -> ErrorResult {
         if uuid_is_blacklisted(self.uuid.as_ref(), Blacklist::Writes) {
             return Err(Security)
         }
@@ -128,6 +115,68 @@ impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
             Err(error) => {
                 Err(Error::from(error))
             },
+        }
+    }
+}
+
+impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-characteristic
+    fn Characteristic(&self) -> Root<BluetoothRemoteGATTCharacteristic> {
+       self.characteristic.get()
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-uuid
+    fn Uuid(&self) -> DOMString {
+        self.uuid.clone()
+    }
+
+     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-value
+    fn GetValue(&self) -> Option<ByteString> {
+        self.value.borrow().clone()
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-readvalue
+    #[allow(unrooted_must_root)]
+    #[allow(unsafe_code)]
+    fn ReadValue(&self) -> Fallible<Rc<Promise>> {
+        match self.read_value() {
+            Ok(value) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    value.to_jsval(cx, v.handle_mut());
+                }
+                Promise::Resolve(self.global().r(), cx, v.handle())
+            },
+            Err(error) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    error.to_jsval(cx, self.global().r(), v.handle_mut());
+                }
+                Promise::Reject(self.global().r(), cx, v.handle())
+            }
+        }
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-writevalue
+    #[allow(unrooted_must_root)]
+    #[allow(unsafe_code)]
+    fn WriteValue(&self, value: Vec<u8>) -> Fallible<Rc<Promise>> {
+        match self.write_value(value) {
+            Ok(()) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let v = UndefinedValue());
+                Promise::Resolve(self.global().r(), cx, v.handle())
+            },
+            Err(error) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    error.to_jsval(cx, self.global().r(), v.handle_mut());
+                }
+                Promise::Reject(self.global().r(), cx, v.handle())
+            }
         }
     }
 }
