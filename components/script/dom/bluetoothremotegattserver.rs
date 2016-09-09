@@ -15,9 +15,13 @@ use dom::bindings::str::DOMString;
 use dom::bluetoothdevice::BluetoothDevice;
 use dom::bluetoothremotegattservice::BluetoothRemoteGATTService;
 use dom::bluetoothuuid::{BluetoothServiceUUID, BluetoothUUID};
+use dom::promise::Promise;
 use ipc_channel::ipc::{self, IpcSender};
+use js::conversions::ToJSValConvertible;
+use js::jsval::UndefinedValue;
 use net_traits::bluetooth_thread::BluetoothMethodMsg;
 use std::cell::Cell;
+use std::rc::Rc;
 
 // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothremotegattserver
 #[dom_struct]
@@ -47,21 +51,9 @@ impl BluetoothRemoteGATTServer {
         let global_ref = global_root.r();
         global_ref.as_window().bluetooth_thread()
     }
-}
 
-impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-device
-    fn Device(&self) -> Root<BluetoothDevice> {
-        self.device.get()
-    }
-
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connected
-    fn Connected(&self) -> bool {
-        self.connected.get()
-    }
-
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect
-    fn Connect(&self) -> Fallible<Root<BluetoothRemoteGATTServer>> {
+        // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect
+    fn connect(&self) -> Fallible<Root<BluetoothRemoteGATTServer>> {
         let (sender, receiver) = ipc::channel().unwrap();
         self.get_bluetooth_thread().send(
             BluetoothMethodMsg::GATTServerConnect(String::from(self.Device().Id()), sender)).unwrap();
@@ -77,25 +69,8 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
         }
     }
 
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-disconnect
-    fn Disconnect(&self) -> ErrorResult {
-        let (sender, receiver) = ipc::channel().unwrap();
-        self.get_bluetooth_thread().send(
-            BluetoothMethodMsg::GATTServerDisconnect(String::from(self.Device().Id()), sender)).unwrap();
-        let server = receiver.recv().unwrap();
-        match server {
-            Ok(connected) => {
-                self.connected.set(connected);
-                Ok(())
-            },
-            Err(error) => {
-                Err(Error::from(error))
-            },
-        }
-    }
-
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice
-    fn GetPrimaryService(&self, service: BluetoothServiceUUID) -> Fallible<Root<BluetoothRemoteGATTService>> {
+    fn get_primary_service(&self, service: BluetoothServiceUUID) -> Fallible<Root<BluetoothRemoteGATTService>> {
         let uuid = try!(BluetoothUUID::GetService(self.global().r(), service)).to_string();
         if uuid_is_blacklisted(uuid.as_ref(), Blacklist::All) {
             return Err(Security)
@@ -119,9 +94,9 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservices
-    fn GetPrimaryServices(&self,
-                          service: Option<BluetoothServiceUUID>)
-                          -> Fallible<Vec<Root<BluetoothRemoteGATTService>>> {
+    fn get_primary_services(&self,
+                            service: Option<BluetoothServiceUUID>)
+                            -> Fallible<Vec<Root<BluetoothRemoteGATTService>>> {
         let mut uuid: Option<String> = None;
         if let Some(s) = service {
             uuid = Some(try!(BluetoothUUID::GetService(self.global().r(), s)).to_string());
@@ -148,6 +123,109 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
             Err(error) => {
                 Err(Error::from(error))
             },
+        }
+    }
+}
+
+impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-device
+    fn Device(&self) -> Root<BluetoothDevice> {
+        self.device.get()
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connected
+    fn Connected(&self) -> bool {
+        self.connected.get()
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect
+    #[allow(unrooted_must_root)]
+    #[allow(unsafe_code)]
+    fn Connect(&self) -> Fallible<Rc<Promise>> {
+        match self.connect() {
+            Ok(server) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    server.to_jsval(cx, v.handle_mut());
+                }
+                Promise::Resolve(self.global().r(), cx, v.handle())
+            },
+            Err(error) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    error.to_jsval(cx, self.global().r(), v.handle_mut());
+                }
+                Promise::Reject(self.global().r(), cx, v.handle())
+            }
+        }
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-disconnect
+    fn Disconnect(&self) -> ErrorResult {
+        let (sender, receiver) = ipc::channel().unwrap();
+        self.get_bluetooth_thread().send(
+            BluetoothMethodMsg::GATTServerDisconnect(String::from(self.Device().Id()), sender)).unwrap();
+        let server = receiver.recv().unwrap();
+        match server {
+            Ok(connected) => {
+                self.connected.set(connected);
+                Ok(())
+            },
+            Err(error) => {
+                Err(Error::from(error))
+            },
+        }
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice
+    #[allow(unrooted_must_root)]
+    #[allow(unsafe_code)]
+    fn GetPrimaryService(&self, service: BluetoothServiceUUID) -> Fallible<Rc<Promise>> {
+        match self.get_primary_service(service) {
+            Ok(service) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    service.to_jsval(cx, v.handle_mut());
+                }
+                Promise::Resolve(self.global().r(), cx, v.handle())
+            },
+            Err(error) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    error.to_jsval(cx, self.global().r(), v.handle_mut());
+                }
+                Promise::Reject(self.global().r(), cx, v.handle())
+            }
+        }
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservices
+    #[allow(unrooted_must_root)]
+    #[allow(unsafe_code)]
+    fn GetPrimaryServices(&self,
+                          service: Option<BluetoothServiceUUID>)
+                          -> Fallible<Rc<Promise>> {
+        match self.get_primary_services(service) {
+            Ok(service_vec) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    service_vec.to_jsval(cx, v.handle_mut());
+                }
+                Promise::Resolve(self.global().r(), cx, v.handle())
+            },
+            Err(error) => {
+                let cx = self.global().r().get_cx();
+                rooted!(in(cx) let mut v = UndefinedValue());
+                unsafe {
+                    error.to_jsval(cx, self.global().r(), v.handle_mut());
+                }
+                Promise::Reject(self.global().r(), cx, v.handle())
+            }
         }
     }
 }
