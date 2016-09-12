@@ -17,11 +17,10 @@ use dom::bindings::global::GlobalRef;
 use dom::bindings::js::{JS, MutHeap, Root};
 use dom::bindings::reflector::{Reflectable, Reflector, reflect_dom_object};
 use dom::bindings::str::{ByteString, DOMString};
+use dom::bluetooth::result_to_promise;
 use dom::bluetoothremotegattcharacteristic::{BluetoothRemoteGATTCharacteristic, MAXIMUM_ATTRIBUTE_LENGTH};
 use dom::promise::Promise;
 use ipc_channel::ipc::{self, IpcSender};
-use js::conversions::ToJSValConvertible;
-use js::jsval::UndefinedValue;
 use net_traits::bluetooth_thread::BluetoothMethodMsg;
 use std::rc::Rc;
 
@@ -139,44 +138,13 @@ impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn ReadValue(&self) -> Fallible<Rc<Promise>> {
-        match self.read_value() {
-            Ok(value) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    value.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.read_value())
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattdescriptor-writevalue
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn WriteValue(&self, value: Vec<u8>) -> Fallible<Rc<Promise>> {
-        match self.write_value(value) {
-            Ok(()) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let v = UndefinedValue());
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.write_value(value))
     }
 }

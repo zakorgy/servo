@@ -12,13 +12,12 @@ use dom::bindings::global::GlobalRef;
 use dom::bindings::js::{JS, MutHeap, Root};
 use dom::bindings::reflector::{Reflectable, Reflector, reflect_dom_object};
 use dom::bindings::str::DOMString;
+use dom::bluetooth::result_to_promise;
 use dom::bluetoothdevice::BluetoothDevice;
 use dom::bluetoothremotegattservice::BluetoothRemoteGATTService;
 use dom::bluetoothuuid::{BluetoothServiceUUID, BluetoothUUID};
 use dom::promise::Promise;
 use ipc_channel::ipc::{self, IpcSender};
-use js::conversions::ToJSValConvertible;
-use js::jsval::UndefinedValue;
 use net_traits::bluetooth_thread::BluetoothMethodMsg;
 use std::cell::Cell;
 use std::rc::Rc;
@@ -142,24 +141,7 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn Connect(&self) -> Fallible<Rc<Promise>> {
-        match self.connect() {
-            Ok(server) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    server.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.connect())
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-disconnect
@@ -183,24 +165,7 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn GetPrimaryService(&self, service: BluetoothServiceUUID) -> Fallible<Rc<Promise>> {
-        match self.get_primary_service(service) {
-            Ok(service) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    service.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_primary_service(service))
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservices
@@ -209,23 +174,6 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
     fn GetPrimaryServices(&self,
                           service: Option<BluetoothServiceUUID>)
                           -> Fallible<Rc<Promise>> {
-        match self.get_primary_services(service) {
-            Ok(service_vec) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    service_vec.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_primary_services(service))
     }
 }

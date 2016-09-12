@@ -173,28 +173,36 @@ impl From<BluetoothError> for Error {
     }
 }
 
+#[allow(unrooted_must_root)]
+#[allow(unsafe_code)]
+pub fn result_to_promise<T: ToJSValConvertible>(global_ref: GlobalRef,
+                                                 bluetooth_result: Fallible<T>)
+                                                 -> Fallible<Rc<Promise>> {
+    match bluetooth_result {
+        Ok(not_error) => {
+            let cx = global_ref.get_cx();
+            rooted!(in(cx) let mut v = UndefinedValue());
+            unsafe {
+                not_error.to_jsval(cx, v.handle_mut());
+            }
+            Promise::Resolve(global_ref, cx, v.handle())
+        },
+        Err(error) => {
+            let cx = global_ref.get_cx();
+            rooted!(in(cx) let mut v = UndefinedValue());
+            unsafe {
+                error.to_jsval(cx, global_ref, v.handle_mut());
+            }
+            Promise::Reject(global_ref, cx, v.handle())
+        }
+    }
+}
+
 impl BluetoothMethods for Bluetooth {
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetooth-requestdevice
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn RequestDevice(&self, option: &RequestDeviceOptions) -> Fallible<Rc<Promise>> {
-        match self.request_bluetooth_devices(option) {
-            Ok(device) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    device.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.request_bluetooth_devices(option))
     }
 }

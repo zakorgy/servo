@@ -11,14 +11,13 @@ use dom::bindings::global::GlobalRef;
 use dom::bindings::js::{JS, MutHeap, Root};
 use dom::bindings::reflector::{Reflectable, Reflector, reflect_dom_object};
 use dom::bindings::str::DOMString;
+use dom::bluetooth::result_to_promise;
 use dom::bluetoothcharacteristicproperties::BluetoothCharacteristicProperties;
 use dom::bluetoothdevice::BluetoothDevice;
 use dom::bluetoothremotegattcharacteristic::BluetoothRemoteGATTCharacteristic;
 use dom::bluetoothuuid::{BluetoothCharacteristicUUID, BluetoothServiceUUID, BluetoothUUID};
 use dom::promise::Promise;
 use ipc_channel::ipc::{self, IpcSender};
-use js::conversions::ToJSValConvertible;
-use js::jsval::UndefinedValue;
 use net_traits::bluetooth_thread::BluetoothMethodMsg;
 use std::rc::Rc;
 
@@ -238,24 +237,7 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
     fn GetCharacteristic(&self,
                          characteristic: BluetoothCharacteristicUUID)
                          -> Fallible<Rc<Promise>> {
-        match self.get_characteristic(characteristic) {
-            Ok(characteristic) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    characteristic.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_characteristic(characteristic))
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getcharacteristics
@@ -264,24 +246,7 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
     fn GetCharacteristics(&self,
                           characteristic: Option<BluetoothCharacteristicUUID>)
                           -> Fallible<Rc<Promise>> {
-        match self.get_characteristics(characteristic) {
-            Ok(characteristic_vec) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    characteristic_vec.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_characteristics(characteristic))
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getincludedservice
@@ -290,24 +255,7 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
     fn GetIncludedService(&self,
                           service: BluetoothServiceUUID)
                           -> Fallible<Rc<Promise>> {
-        match self.get_included_service(service) {
-            Ok(service) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    service.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_included_service(service))
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getincludedservices
@@ -316,23 +264,6 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
     fn GetIncludedServices(&self,
                           service: Option<BluetoothServiceUUID>)
                           -> Fallible<Rc<Promise>> {
-        match self.get_included_services(service) {
-            Ok(service_vec) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    service_vec.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_included_services(service))
     }
 }

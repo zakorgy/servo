@@ -18,14 +18,13 @@ use dom::bindings::global::GlobalRef;
 use dom::bindings::js::{JS, MutHeap, Root};
 use dom::bindings::reflector::{Reflectable, Reflector, reflect_dom_object};
 use dom::bindings::str::{ByteString, DOMString};
+use dom::bluetooth::result_to_promise;
 use dom::bluetoothcharacteristicproperties::BluetoothCharacteristicProperties;
 use dom::bluetoothremotegattdescriptor::BluetoothRemoteGATTDescriptor;
 use dom::bluetoothremotegattservice::BluetoothRemoteGATTService;
 use dom::bluetoothuuid::{BluetoothDescriptorUUID, BluetoothUUID};
 use dom::promise::Promise;
 use ipc_channel::ipc::{self, IpcSender};
-use js::conversions::ToJSValConvertible;
-use js::jsval::UndefinedValue;
 use net_traits::bluetooth_thread::BluetoothMethodMsg;
 use std::rc::Rc;
 
@@ -216,24 +215,7 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn GetDescriptor(&self, descriptor: BluetoothDescriptorUUID) -> Fallible<Rc<Promise>> {
-        match self.get_descriptor(descriptor) {
-            Ok(descriptor_vec) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    descriptor_vec.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_descriptor(descriptor))
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-getdescriptors
@@ -242,24 +224,7 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     fn GetDescriptors(&self,
                       descriptor: Option<BluetoothDescriptorUUID>)
                       -> Fallible<Rc<Promise>> {
-        match self.get_descriptors(descriptor) {
-            Ok(descriptor) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    descriptor.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.get_descriptors(descriptor))
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-value
@@ -271,44 +236,13 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn ReadValue(&self) -> Fallible<Rc<Promise>> {
-        match self.read_value() {
-            Ok(value) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    value.to_jsval(cx, v.handle_mut());
-                }
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.read_value())
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-writevalue
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
     fn WriteValue(&self, value: Vec<u8>) -> Fallible<Rc<Promise>> {
-        match self.write_value(value) {
-            Ok(()) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let v = UndefinedValue());
-                Promise::Resolve(self.global().r(), cx, v.handle())
-            },
-            Err(error) => {
-                let cx = self.global().r().get_cx();
-                rooted!(in(cx) let mut v = UndefinedValue());
-                unsafe {
-                    error.to_jsval(cx, self.global().r(), v.handle_mut());
-                }
-                Promise::Reject(self.global().r(), cx, v.handle())
-            }
-        }
+        result_to_promise(self.global().r(), self.write_value(value))
     }
 }
