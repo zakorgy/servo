@@ -231,36 +231,36 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
         self.uuid.clone()
     }
 
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getcharacteristic
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getcharacteristic
     fn GetCharacteristic(&self,
                          characteristic: BluetoothCharacteristicUUID)
                          -> Fallible<Rc<Promise>> {
         result_to_promise(self.global().r(), self.get_characteristic(characteristic))
     }
 
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getcharacteristics
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getcharacteristics
     fn GetCharacteristics(&self,
                           characteristic: Option<BluetoothCharacteristicUUID>)
                           -> Fallible<Rc<Promise>> {
         result_to_promise(self.global().r(), self.get_characteristics(characteristic))
     }
 
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getincludedservice
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getincludedservice
     fn GetIncludedService(&self,
                           service: BluetoothServiceUUID)
                           -> Fallible<Rc<Promise>> {
         result_to_promise(self.global().r(), self.get_included_service(service))
     }
 
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getincludedservices
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattservice-getincludedservices
     fn GetIncludedServices(&self,
                           service: Option<BluetoothServiceUUID>)
                           -> Fallible<Rc<Promise>> {

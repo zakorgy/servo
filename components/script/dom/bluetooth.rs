@@ -199,9 +199,9 @@ pub fn result_to_promise<T: ToJSValConvertible>(global_ref: GlobalRef,
 }
 
 impl BluetoothMethods for Bluetooth {
-    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetooth-requestdevice
     #[allow(unrooted_must_root)]
     #[allow(unsafe_code)]
+    // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetooth-requestdevice
     fn RequestDevice(&self, option: &RequestDeviceOptions) -> Fallible<Rc<Promise>> {
         result_to_promise(self.global().r(), self.request_bluetooth_devices(option))
     }
