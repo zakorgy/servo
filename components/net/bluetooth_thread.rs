@@ -869,7 +869,7 @@ impl BluetoothManager {
             value = self.get_gatt_descriptor(&mut adapter, &id)
                         .map(|d| d.read_value().unwrap_or(vec![]));
         }
-        let _ = sender.send(value.ok_or(BluetoothError::NotSupported));
+        let _ = sender.send(value.ok_or(BluetoothError::InvalidState));
     }
 
     fn write_value(&mut self, id: String, value: Vec<u8>, sender: IpcSender<BluetoothResult<bool>>) {
@@ -885,7 +885,7 @@ impl BluetoothManager {
                 Ok(_) => Ok(true),
                 Err(_) => return drop(sender.send(Err(BluetoothError::NotSupported))),
             },
-            None => return drop(sender.send(Err(BluetoothError::NotSupported))),
+            None => return drop(sender.send(Err(BluetoothError::InvalidState))),
         };
         let _ = sender.send(message);
     }
