@@ -173,6 +173,13 @@ pub struct BluetoothManager {
     allowed_services: HashMap<String, HashSet<String>>,
 }
 
+enum GATTHierarchyLevel {
+    Device,
+    Service,
+    Characteristic,
+    // Descriptor,
+}
+
 impl BluetoothManager {
     pub fn new (receiver: IpcReceiver<BluetoothMethodMsg>, adapter: Option<BluetoothAdapter>) -> BluetoothManager {
         BluetoothManager {
@@ -237,6 +244,38 @@ impl BluetoothManager {
                 }
                 BluetoothMethodMsg::Exit => {
                     break
+                },
+            }
+        }
+    }
+
+
+    fn is_id_still_in_context(&self, id: &str, id_level: GATTHierarchyLevel) -> bool {
+        loop {
+            match id_level {
+                GATTHierarchyLevel::Characteristic => {
+                    if self.cached_characteristics.contains_key(id) {
+                        if let Some(service_id) = self.characteristic_to_service.get(id) {
+                            return self.is_id_still_in_context(service_id, GATTHierarchyLevel::Service)
+                        }
+                        return false;
+                    }
+                    return false;
+                },
+                GATTHierarchyLevel::Service => {
+                    if self.cached_services.contains_key(id) {
+                        if let Some(device_id) = self.service_to_device.get(id) {
+                            return self.is_id_still_in_context(device_id, GATTHierarchyLevel::Device)
+                        }
+                        return false;
+                    }
+                    return false;
+                },
+                GATTHierarchyLevel::Device => {
+                    if self.cached_devices.contains_key(id) {
+                        return true;
+                    }
+                    return false;
                 },
             }
         }
@@ -618,6 +657,9 @@ impl BluetoothManager {
                            device_id: String,
                            uuid: String,
                            sender: IpcSender<BluetoothResult<BluetoothServiceMsg>>) {
+        if !self.is_id_still_in_context(&device_id, GATTHierarchyLevel::Device) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = get_adapter_or_return_error!(self, sender);
         if !self.allowed_services.get(&device_id).map_or(false, |s| s.contains(&uuid)) {
             return drop(sender.send(Err(BluetoothError::Security)));
@@ -644,6 +686,9 @@ impl BluetoothManager {
                             device_id: String,
                             uuid: Option<String>,
                             sender: IpcSender<BluetoothResult<BluetoothServicesMsg>>) {
+        if !self.is_id_still_in_context(&device_id, GATTHierarchyLevel::Device) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = get_adapter_or_return_error!(self, sender);
         let services = match uuid {
             Some(ref id) => {
@@ -680,6 +725,9 @@ impl BluetoothManager {
                             service_id: String,
                             uuid: String,
                             sender: IpcSender<BluetoothResult<BluetoothServiceMsg>>) {
+        if !self.is_id_still_in_context(&service_id, GATTHierarchyLevel::Service) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = match self.get_or_create_adapter() {
             Some(a) => a,
             None => return drop(sender.send(Err(BluetoothError::Type(ADAPTER_ERROR.to_string())))),
@@ -711,6 +759,9 @@ impl BluetoothManager {
                              service_id: String,
                              uuid: Option<String>,
                              sender: IpcSender<BluetoothResult<BluetoothServicesMsg>>) {
+        if !self.is_id_still_in_context(&service_id, GATTHierarchyLevel::Service) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = match self.get_or_create_adapter() {
             Some(a) => a,
             None => return drop(sender.send(Err(BluetoothError::Type(ADAPTER_ERROR.to_string())))),
@@ -748,6 +799,9 @@ impl BluetoothManager {
                           service_id: String,
                           uuid: String,
                           sender: IpcSender<BluetoothResult<BluetoothCharacteristicMsg>>) {
+        if !self.is_id_still_in_context(&service_id, GATTHierarchyLevel::Service) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = get_adapter_or_return_error!(self, sender);
         let characteristics = self.get_gatt_characteristics_by_uuid(&mut adapter, &service_id, &uuid);
         if characteristics.is_empty() {
@@ -779,6 +833,9 @@ impl BluetoothManager {
                            service_id: String,
                            uuid: Option<String>,
                            sender: IpcSender<BluetoothResult<BluetoothCharacteristicsMsg>>) {
+        if !self.is_id_still_in_context(&service_id, GATTHierarchyLevel::Service) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = get_adapter_or_return_error!(self, sender);
         let characteristics = match uuid {
             Some(id) => self.get_gatt_characteristics_by_uuid(&mut adapter, &service_id, &id),
@@ -818,6 +875,9 @@ impl BluetoothManager {
                       characteristic_id: String,
                       uuid: String,
                       sender: IpcSender<BluetoothResult<BluetoothDescriptorMsg>>) {
+        if !self.is_id_still_in_context(&characteristic_id, GATTHierarchyLevel::Characteristic) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = get_adapter_or_return_error!(self, sender);
         let descriptors = self.get_gatt_descriptors_by_uuid(&mut adapter, &characteristic_id, &uuid);
         if descriptors.is_empty() {
@@ -838,6 +898,9 @@ impl BluetoothManager {
                        characteristic_id: String,
                        uuid: Option<String>,
                        sender: IpcSender<BluetoothResult<BluetoothDescriptorsMsg>>) {
+        if !self.is_id_still_in_context(&characteristic_id, GATTHierarchyLevel::Characteristic) {
+            return drop(sender.send(Err(BluetoothError::InvalidState)));
+        }
         let mut adapter = get_adapter_or_return_error!(self, sender);
         let descriptors = match uuid {
             Some(id) => self.get_gatt_descriptors_by_uuid(&mut adapter, &characteristic_id, &id),
