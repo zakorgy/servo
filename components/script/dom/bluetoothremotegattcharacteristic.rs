@@ -80,6 +80,10 @@ impl BluetoothRemoteGATTCharacteristic {
     fn get_instance_id(&self) -> String {
         self.instance_id.clone()
     }
+
+    fn get_origin_string(&self) -> String {
+        self.global().as_window().get_url().origin().ascii_serialization()
+    }
 }
 
 impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteristic {
@@ -119,8 +123,12 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetDescriptor(self.get_instance_id(), uuid, sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetDescriptor(self.get_origin_string(),
+                                                  self.get_instance_id(),
+                                                  uuid,
+                                                  sender))
+            .unwrap();
         return p;
     }
 
@@ -152,8 +160,12 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetDescriptors(self.get_instance_id(), uuid, sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetDescriptors(self.get_origin_string(),
+                                                   self.get_instance_id(),
+                                                   uuid,
+                                                   sender))
+            .unwrap();
         return p;
     }
 
@@ -181,7 +193,7 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
         }
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
-            BluetoothRequest::ReadValue(self.get_instance_id(), sender)).unwrap();
+            BluetoothRequest::ReadValue(self.get_origin_string(), self.get_instance_id(), sender)).unwrap();
         return p;
     }
 
@@ -211,7 +223,7 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
         }
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
-            BluetoothRequest::WriteValue(self.get_instance_id(), value, sender)).unwrap();
+            BluetoothRequest::WriteValue(self.get_origin_string(), self.get_instance_id(), value, sender)).unwrap();
         return p;
     }
 }

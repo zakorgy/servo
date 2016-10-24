@@ -73,6 +73,10 @@ impl BluetoothRemoteGATTService {
     fn get_instance_id(&self) -> String {
         self.instance_id.clone()
     }
+
+    fn get_origin_string(&self) -> String {
+        self.global().as_window().get_url().origin().ascii_serialization()
+    }
 }
 
 impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
@@ -114,8 +118,12 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetCharacteristic(self.get_instance_id(), uuid, sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetCharacteristic(self.get_origin_string(),
+                                                      self.get_instance_id(),
+                                                      uuid,
+                                                      sender))
+            .unwrap();
         return p;
     }
 
@@ -147,8 +155,12 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetCharacteristics(self.get_instance_id(), uuid, sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetCharacteristics(self.get_origin_string(),
+                                                       self.get_instance_id(),
+                                                       uuid,
+                                                       sender))
+            .unwrap();
         return p;
     }
 
@@ -175,10 +187,12 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetIncludedService(self.get_instance_id(),
-                                                   uuid,
-                                                   sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetIncludedService(self.get_origin_string(),
+                                                       self.get_instance_id(),
+                                                       uuid,
+                                                       sender))
+            .unwrap();
         return p;
     }
 
@@ -211,10 +225,12 @@ impl BluetoothRemoteGATTServiceMethods for BluetoothRemoteGATTService {
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetIncludedServices(self.get_instance_id(),
-                                                    uuid,
-                                                    sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetIncludedServices(self.get_origin_string(),
+                                                        self.get_instance_id(),
+                                                        uuid,
+                                                        sender))
+            .unwrap();
         return p;
     }
 }

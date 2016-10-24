@@ -67,6 +67,11 @@ impl BluetoothRemoteGATTDescriptor {
     fn get_instance_id(&self) -> String {
         self.instance_id.clone()
     }
+
+   fn get_origin_string(&self) -> String {
+        let string = self.global().as_window().get_url().origin().ascii_serialization();
+        string
+    }
 }
 
 impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
@@ -100,7 +105,7 @@ impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
         }
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
-            BluetoothRequest::ReadValue(self.get_instance_id(), sender)).unwrap();
+            BluetoothRequest::ReadValue(self.get_origin_string(), self.get_instance_id(), sender)).unwrap();
         return p;
     }
 
@@ -123,7 +128,7 @@ impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
         }
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
-            BluetoothRequest::WriteValue(self.get_instance_id(), value, sender)).unwrap();
+            BluetoothRequest::WriteValue(self.get_origin_string(), self.get_instance_id(), value, sender)).unwrap();
         return p;
     }
 }

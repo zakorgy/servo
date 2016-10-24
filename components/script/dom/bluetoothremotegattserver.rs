@@ -49,6 +49,10 @@ impl BluetoothRemoteGATTServer {
     fn get_bluetooth_thread(&self) -> IpcSender<BluetoothRequest> {
         self.global().as_window().bluetooth_thread()
     }
+
+    fn get_origin_string(&self) -> String {
+        self.global().as_window().get_url().origin().ascii_serialization()
+    }
 }
 
 impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
@@ -67,16 +71,22 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
     fn Connect(&self) -> Rc<Promise> {
         let p = Promise::new(&self.global());
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GATTServerConnect(String::from(self.Device().Id()), sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GATTServerConnect(self.get_origin_string(),
+                                                      String::from(self.Device().Id()),
+                                                      sender))
+            .unwrap();
         return p;
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-disconnect
     fn Disconnect(&self) -> ErrorResult {
         let (sender, receiver) = ipc::channel().unwrap();
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GATTServerDisconnect(String::from(self.Device().Id()), sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GATTServerDisconnect(self.get_origin_string(),
+                                                         String::from(self.Device().Id()),
+                                                         sender))
+            .unwrap();
         let server = receiver.recv().unwrap();
         match server {
             Ok(connected) => {
@@ -110,8 +120,12 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetPrimaryService(String::from(self.Device().Id()), uuid, sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetPrimaryService(self.get_origin_string(),
+                                                      String::from(self.Device().Id()),
+                                                      uuid,
+                                                      sender))
+            .unwrap();
         return p;
     }
 
@@ -141,8 +155,12 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
             return p;
         }
         let sender = response_async(&p, self);
-        self.get_bluetooth_thread().send(
-            BluetoothRequest::GetPrimaryServices(String::from(self.Device().Id()), uuid, sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::GetPrimaryServices(self.get_origin_string(),
+                                                       String::from(self.Device().Id()),
+                                                       uuid,
+                                                       sender))
+            .unwrap();
         return p;
     }
 }

@@ -119,6 +119,10 @@ impl Bluetooth {
         self.global().as_window().bluetooth_thread()
     }
 
+    fn get_origin_string(&self) -> String {
+        self.global().as_window().get_url().origin().ascii_serialization()
+    }
+
     // https://webbluetoothcg.github.io/web-bluetooth/#request-bluetooth-devices
     fn request_bluetooth_devices(&self,
                                  p: &Rc<Promise>,
@@ -140,7 +144,9 @@ impl Bluetooth {
         // Note: Steps 6-8 are implemented in
         // components/net/bluetooth_thread.rs in request_device function.
         let sender = response_async(p, self);
-        self.get_bluetooth_thread().send(BluetoothRequest::RequestDevice(option, sender)).unwrap();
+        self.get_bluetooth_thread()
+            .send(BluetoothRequest::RequestDevice(self.get_origin_string(), option, sender))
+            .unwrap();
     }
 }
 
