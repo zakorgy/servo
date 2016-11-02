@@ -130,21 +130,8 @@ fn matches_filter(device: &BluetoothDevice, filter: &BluetoothScanfilter) -> boo
         }
     }
 
-// Step 4.
-// TODO: Implement get_manufacturer_data in device crate.
-//    if let Some(manufacturer_id) = filter.get_manufacturer_id() {
-//        if !device.get_manufacturer_data().contains_key(manufacturer_id) {
-//            return false;
-//        }
-//    }
-//
-// Step 5.
-// TODO: Implement get_device_data in device crate.
-//    if !filter.get_service_data_uuid().is_empty() {
-//        if !device.get_service_data().contains_key(filter.get_service_data_uuid()) {
-//            return false;
-//        }
-//    }
+    // TODO: Step 4: Implement get_manufacturer_data in device crate.
+    // TODO: Step 5: Implement get_device_data in device crate.
 
     // Step 6.
     true

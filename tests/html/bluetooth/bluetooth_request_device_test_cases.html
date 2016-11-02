@@ -49,6 +49,114 @@
     testCases.push({filters: [{namePrefix: 'rasp'}], optionalServices: ['12345678-1234-1234-1234-123456789abc']});
     //Test 21
     testCases.push({filters: [{namePrefix: 'rasp'}], optionalServices: ['f000ffc0-0451-4000-b000-000000000000', 0x1812]});
+    //Test 22
+    testCases.push({filters:
+        [{manufacturerData: {
+            17: {dataPrefix: new Uint8Array([0x91, 0xAA]),
+                 mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 23
+    testCases.push({filters:
+        [{manufacturerData: {
+            'A': {dataPrefix: new Uint8Array([0x91, 0xAA]),
+                  mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 24
+    testCases.push({filters:
+        [{manufacturerData: {
+            undefined : {dataPrefix: new Uint8Array([0x91, 0xAA]),
+                         mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 25
+    testCases.push({filters:
+        [{manufacturerData: {
+            null: {dataPrefix: new Uint8Array([0x91, 0xAA]),
+                    mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 26
+    testCases.push({filters:
+        [{manufacturerData: {
+            '': {dataPrefix: new Uint8Array([0x91, 0xAA]),
+                 mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 27
+    testCases.push({filters:
+        [{manufacturerData: {
+            17: {dataPrefix: new Uint8Array([0x91, 0xAA, 0x78]),
+                 mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 28
+    testCases.push({filters:
+        [{manufacturerData: {
+            17: {dataPrefix: new Uint8Array([0x91, 0xAA, 0x78])},
+        }}]
+    });
+    //Test 29
+    testCases.push({filters:
+        [{manufacturerData: {
+            17: {dataPrefix: new Uint8Array([0x91]),
+                 mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 30
+    testCases.push({filters:
+        [{manufacturerData: {
+            17: {mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 31
+    testCases.push({filters:
+        [{manufacturerData: {
+            "17": {mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 32
+    testCases.push({filters:
+        [{manufacturerData: {
+            "-0": {mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 33
+    testCases.push({filters:
+        [{manufacturerData: {
+            "-17": {mask: new Uint8Array([0x0F, 0x57])},
+        }}]
+    });
+    //Test 34
+    testCases.push({filters:
+        [{manufacturerData: {
+            17: {},
+            18: {},
+        }}]
+    });
+    //Test 35
+    testCases.push({filters:
+        [{manufacturerData: {17: {}}},
+         {serviceData: {"battery_service": {}}}]
+    });
+    //Test 36
+    testCases.push({filters:
+        [{manufacturerData: {17: {}},
+          serviceData: {"battery_service": {}}}]
+    });
+    //Test 37
+    testCases.push({filters: [{manufacturerData: {}}]});
+    //Test 38
+    testCases.push({filters: [{serviceData: {}}]});
+    //Test 39
+    testCases.push({filters:
+        [{serviceData: {"A": {}}}]
+    });
+    //Test 40
+    testCases.push({filters:
+        [{serviceData: {"f000ffc0-0451-4000-b000-000000000000": {}}}]
+    });
 
     function onButtonClick(testNumber) {
         clear();
