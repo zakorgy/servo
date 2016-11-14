@@ -1,6 +1,7 @@
 'use strict';
 
 // Bluetooth UUID constants:
+var base_uuid = '00000000-0000-1000-8000-00805f9b34fb'
 // Services:
 var blacklist_test_service_uuid = "611c954a-263b-4f4a-aab6-01ddb953f985";
 var request_disconnection_service_uuid = "01d7d889-7451-419f-aeb8-d65e7b9277af";
@@ -137,6 +138,24 @@ var number_of_digitals = {
     uuid: '00002909-0000-1000-8000-00805f9b34fb'
 };
 
+var alert_notification = {
+    alias: 0x1811,
+    name: 'alert_notification',
+    uuid: '00001811-0000-1000-8000-00805f9b34fb',
+}
+
+var aerobic_heart_rate_lower_limit = {
+    alias: 0x2a7e,
+    name: 'aerobic_heart_rate_lower_limit',
+    uuid: '00002a7e-0000-1000-8000-00805f9b34fb',
+}
+
+var characteristic_extended_properties = {
+    alias: 0x2900,
+    name: 'gatt.characteristic_extended_properties',
+    uuid: '00002900-0000-1000-8000-00805f9b34fb',
+}
+
 // Helper function for converting strings to an array of bytes.
 function asciiToDecimal(bytestr) {
     var result = [];
@@ -145,3 +164,27 @@ function asciiToDecimal(bytestr) {
     }
     return result;
 }
+
+// Variables used to test the BluetoothUUID functions.
+var deadbeef = {
+    alias: 0xDEADBEEF,
+    uuid: 'deadbeef-0000-1000-8000-00805f9b34fb',
+};
+
+var adeadbeef = {
+    alias: 0xADEADBEEF,
+    uuid: 'deadbeef-0000-1000-8000-00805f9b34fb',
+};
+
+var string_alias = 'deadbeef';
+var all_caps_uuid = '1A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D';
+var basic_uuid = '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d';
+var invalid_character_uuid = '0000000g-0000-1000-8000-00805f9b34fb';
+var max_uuid =  'ffffffff-0000-1000-8000-00805f9b34fb';
+var base_alias = 0x0
+var nine_digits =     0xfffffffff;
+var thirteen_digits = 0xfffffffffffff;
+var fourteen_digits = 0xffffffffffffff;
+var array = [];
+var func = () => {};
+var object = {};
