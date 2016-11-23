@@ -5,9 +5,11 @@
     <input id="service" type="text" autofocus placeholder="Bluetooth Service">
     <input id="name" type="text" placeholder="Device Name">
     <input id="namePrefix" type="text" placeholder="Device Name Prefix">
-    <button type="button" onclick="onScanButtonClick()">Scan()</button>
-    <button type="button" onclick="onDisconnectButtonClick()">Disconnect()</button>
-    <button type="button" onclick="onReconnectButtonClick()">Reconnect()</button>
+    <button type="button" onclick="onScanButtonClick()">Scan</button>
+    <button type="button" onclick="onConnectButtonClick()">Connect</button>
+    <button type="button" onclick="onDisconnectButtonClick()">Disconnect</button>
+    <button type="button" onclick="onReconnectButtonClick()">Reconnect</button>
+    <button type="button" onclick="onDisconnectDuringConnectButtonClick()">Disconnect during connect</button>
     <pre id="log"></pre>
     <script src="bluetooth_functions.js"></script>
     <script>
@@ -37,9 +39,7 @@
         window.navigator.bluetooth.requestDevice(options)
         .then(device => {
             bluetoothDevice = device;
-
-            log('Connecting to Bluetooth Device...');
-            connect();
+            log("Device name: " + bluetoothDevice.name);
         })
         .catch(err => {
             log(err);
@@ -52,13 +52,8 @@
             return log('> There is no connected Bluetooth Device instance, from which we can disconnect');
 
         try {
-            log('Disconnecting from Bluetooth Device...');
-            if (bluetoothDevice.gatt.connected) {
-                bluetoothDevice.gatt.disconnect();
-                log('> Bluetooth Device connected: ' + bluetoothDevice.gatt.connected);
-            } else {
-                log('> Bluetooth Device is already disconnected');
-            }
+            bluetoothDevice.gatt.disconnect();
+            log('> Bluetooth Device connected: ' + bluetoothDevice.gatt.connected);
         } catch(err) {
             log(err);
         }
@@ -72,12 +67,13 @@
             log('> Bluetooth Device is already connected');
             return;
         } else {
-            log('Connecting to Bluetooth Device...');
-            connect();
+            onConnectButtonClick();
         }
     }
 
-    function connect() {
+    function onConnectButtonClick() {
+        clear();
+        log('Connecting to Bluetooth Device...');
         bluetoothDevice.gatt.connect()
         .then(server => {
             log('Result of the connect() method of the GATT Server: ' + server);
@@ -87,6 +83,19 @@
             log(err);
         });
     }
+
+    function onDisconnectDuringConnectButtonClick() {
+        clear();
+        log('Start connecting to Bluetooth Device...');
+        let promise = bluetoothDevice.gatt.connect();
+        log('Call disconnect meanwhile...');
+        bluetoothDevice.gatt.disconnect();
+        return promise
+        .catch(err => {
+            log(err);
+        });
+    }
+
     </script>
 </body>
 </html>

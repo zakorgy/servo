@@ -4,10 +4,11 @@
 
 use bluetooth_traits::{BluetoothRequest, BluetoothResponse};
 use bluetooth_traits::blacklist::{Blacklist, uuid_is_blacklisted};
+use dom::bindings::cell::DOMRefCell;
 use dom::bindings::codegen::Bindings::BluetoothDeviceBinding::BluetoothDeviceMethods;
 use dom::bindings::codegen::Bindings::BluetoothRemoteGATTServerBinding;
 use dom::bindings::codegen::Bindings::BluetoothRemoteGATTServerBinding::BluetoothRemoteGATTServerMethods;
-use dom::bindings::error::Error::{self, Network, Security};
+use dom::bindings::error::Error::{self, Abort, Network, Security};
 use dom::bindings::error::ErrorResult;
 use dom::bindings::js::{JS, MutHeap, Root};
 use dom::bindings::reflector::{Reflectable, Reflector, reflect_dom_object};
@@ -23,12 +24,27 @@ use js::jsapi::JSContext;
 use std::cell::Cell;
 use std::rc::Rc;
 
+use core::ops::Deref;
+
+
 // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothremotegattserver
 #[dom_struct]
 pub struct BluetoothRemoteGATTServer {
     reflector_: Reflector,
     device: MutHeap<JS<BluetoothDevice>>,
     connected: Cell<bool>,
+    #[ignore_heap_size_of = "SM handles JS values"]
+    active_algorithms: DOMRefCell<Vec<(Rc<Promise>, String)>>,
+}
+
+trait PromiseSearch {
+    fn contains_promise_at_position(&self, promise: &Rc<Promise>) -> Option<usize>;
+}
+
+impl PromiseSearch for Vec<(Rc<Promise>, String)> {
+    fn contains_promise_at_position(&self, promise: &Rc<Promise>) -> Option<usize> {
+        self.iter().position(|&(ref p, _)| p.promise_obj().get() == promise.promise_obj().get())
+    }
 }
 
 impl BluetoothRemoteGATTServer {
@@ -37,6 +53,7 @@ impl BluetoothRemoteGATTServer {
             reflector_: Reflector::new(),
             device: MutHeap::new(device),
             connected: Cell::new(false),
+            active_algorithms: DOMRefCell::new(Vec::new()),
         }
     }
 
@@ -67,6 +84,7 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
     fn Connect(&self) -> Rc<Promise> {
         let p = Promise::new(&self.global());
         let sender = response_async(&p, self);
+        self.active_algorithms.borrow_mut().push((p.clone(), "connect".to_owned()));
         self.get_bluetooth_thread().send(
             BluetoothRequest::GATTServerConnect(String::from(self.Device().Id()), sender)).unwrap();
         return p;
@@ -74,6 +92,7 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-disconnect
     fn Disconnect(&self) -> ErrorResult {
+        self.active_algorithms.borrow_mut().clear();
         let (sender, receiver) = ipc::channel().unwrap();
         self.get_bluetooth_thread().send(
             BluetoothRequest::GATTServerDisconnect(String::from(self.Device().Id()), sender)).unwrap();
@@ -151,6 +170,12 @@ impl AsyncBluetoothListener for BluetoothRemoteGATTServer {
     fn handle_response(&self, response: BluetoothResponse, promise_cx: *mut JSContext, promise: &Rc<Promise>) {
         match response {
             BluetoothResponse::GATTServerConnect(connected) => {
+                let position =
+                    match self.active_algorithms.borrow().deref().contains_promise_at_position(promise) {
+                        Some(pos) => pos,
+                        None => return promise.reject_error(promise_cx, Abort),
+                    };
+                self.active_algorithms.borrow_mut().remove(position);
                 self.connected.set(connected);
                 promise.resolve_native(promise_cx, self);
             },

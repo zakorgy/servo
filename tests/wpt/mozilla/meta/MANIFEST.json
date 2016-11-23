@@ -6722,6 +6722,12 @@
             "url": "/_mozilla/mozilla/bluetooth/connect/device-goes-out-of-range.html"
           }
         ],
+        "mozilla/bluetooth/connect/disconnect-called-during.html": [
+          {
+            "path": "mozilla/bluetooth/connect/disconnect-called-during.html",
+            "url": "/_mozilla/mozilla/bluetooth/connect/disconnect-called-during.html"
+          }
+        ],
         "mozilla/bluetooth/connect/get-same-gatt-server.html": [
           {
             "path": "mozilla/bluetooth/connect/get-same-gatt-server.html",
