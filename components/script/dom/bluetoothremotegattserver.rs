@@ -37,7 +37,7 @@ pub struct BluetoothRemoteGATTServer {
     active_algorithms: DOMRefCell<Vec<(Rc<Promise>, String)>>,
 }
 
-trait PromiseSearch {
+/*trait PromiseSearch {
     fn contains_promise_at_position(&self, promise: &Rc<Promise>) -> Option<usize>;
 }
 
@@ -45,7 +45,7 @@ impl PromiseSearch for Vec<(Rc<Promise>, String)> {
     fn contains_promise_at_position(&self, promise: &Rc<Promise>) -> Option<usize> {
         self.iter().position(|&(ref p, _)| p.promise_obj().get() == promise.promise_obj().get())
     }
-}
+}*/
 
 impl BluetoothRemoteGATTServer {
     pub fn new_inherited(device: &BluetoothDevice) -> BluetoothRemoteGATTServer {
@@ -92,6 +92,9 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
 
     // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-disconnect
     fn Disconnect(&self) -> ErrorResult {
+        for &(ref p, _) in self.active_algorithms.borrow().iter() {
+            p.reject_error(p.global().get_cx(), Abort);
+        }
         self.active_algorithms.borrow_mut().clear();
         let (sender, receiver) = ipc::channel().unwrap();
         self.get_bluetooth_thread().send(
@@ -170,12 +173,12 @@ impl AsyncBluetoothListener for BluetoothRemoteGATTServer {
     fn handle_response(&self, response: BluetoothResponse, promise_cx: *mut JSContext, promise: &Rc<Promise>) {
         match response {
             BluetoothResponse::GATTServerConnect(connected) => {
-                let position =
+                /*let position =
                     match self.active_algorithms.borrow().deref().contains_promise_at_position(promise) {
                         Some(pos) => pos,
                         None => return promise.reject_error(promise_cx, Abort),
                     };
-                self.active_algorithms.borrow_mut().remove(position);
+                self.active_algorithms.borrow_mut().remove(position);*/
                 self.connected.set(connected);
                 promise.resolve_native(promise_cx, self);
             },
