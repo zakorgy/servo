@@ -103,6 +103,8 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     fn GetDescriptor(&self, descriptor: BluetoothDescriptorUUID) -> Rc<Promise> {
         let p = Promise::new(&self.global());
         let p_cx = p.global().get_cx();
+
+        // Step 1.
         let uuid = match BluetoothUUID::descriptor(descriptor) {
             Ok(uuid) => uuid.to_string(),
             Err(e) => {
@@ -110,14 +112,23 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
                 return p;
             }
         };
+
+        // Step 2.
         if uuid_is_blocklisted(uuid.as_ref(), Blocklist::All) {
             p.reject_error(p_cx, Security);
             return p;
         }
+
+        // Step 3 - 4.
         if !self.Service().Device().Gatt().Connected() {
             p.reject_error(p_cx, Network);
             return p;
         }
+
+        // TODO: Step 5: Implement representedService internal slot for BluetoothRemoteGATTService.
+
+        // Note: Steps 6 - 7 are implemented in components/bluetooth/lib.rs in get_descriptor function
+        // and in handle_response function.
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
             BluetoothRequest::GetDescriptor(self.get_instance_id(), uuid, sender)).unwrap();
@@ -133,6 +144,7 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
         let p_cx = p.global().get_cx();
         let mut uuid: Option<String> = None;
         if let Some(d) = descriptor {
+            // Step 1.
             uuid = match BluetoothUUID::descriptor(d) {
                 Ok(uuid) => Some(uuid.to_string()),
                 Err(e) => {
@@ -141,16 +153,24 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
                 }
             };
             if let Some(ref uuid) = uuid {
+                // Step 2.
                 if uuid_is_blocklisted(uuid.as_ref(), Blocklist::All) {
                     p.reject_error(p_cx, Security);
                     return p;
                 }
             }
         };
+
+        // Step 3 - 4.
         if !self.Service().Device().Gatt().Connected() {
             p.reject_error(p_cx, Network);
             return p;
         }
+
+        // TODO: Step 5: Implement representedService internal slot for BluetoothRemoteGATTService.
+
+        // Note: Steps 6 - 7 are implemented in components/bluetooth/lib.rs in get_descriptors function
+        // and in handle_response function.
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
             BluetoothRequest::GetDescriptors(self.get_instance_id(), uuid, sender)).unwrap();
@@ -167,18 +187,32 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     fn ReadValue(&self) -> Rc<Promise> {
         let p = Promise::new(&self.global());
         let p_cx = p.global().get_cx();
+
+        // Step 1.
         if uuid_is_blocklisted(self.uuid.as_ref(), Blocklist::Reads) {
             p.reject_error(p_cx, Security);
             return p;
         }
+
+        // Step 2.
         if !self.Service().Device().Gatt().Connected() {
             p.reject_error(p_cx, Network);
             return p;
         }
+
+        // TODO: Step 3 - 4: Implement representedCharacteristic internal slot for BluetoothRemoteGATTCharacteristic.
+
+        // TODO: Step 5: Implement the `connection-checking-wrapper` algorithm for BluetoothRemoteGATTServer.
+
+        // Step 5.1.
+        // Note: May make this check in the lower level too.
         if !self.Properties().Read() {
             p.reject_error(p_cx, NotSupported);
             return p;
         }
+
+        // Note: Remaining substeps of Step 5 are implemented in components/bluetooth/lib.rs in readValue function
+        // and in handle_response function.
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
             BluetoothRequest::ReadValue(self.get_instance_id(), sender)).unwrap();
@@ -190,25 +224,40 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     fn WriteValue(&self, value: Vec<u8>) -> Rc<Promise> {
         let p = Promise::new(&self.global());
         let p_cx = p.global().get_cx();
+
+        // Step 1.
         if uuid_is_blocklisted(self.uuid.as_ref(), Blocklist::Writes) {
             p.reject_error(p_cx, Security);
             return p;
         }
+
+        // Step 2 - 3.
         if value.len() > MAXIMUM_ATTRIBUTE_LENGTH {
             p.reject_error(p_cx, InvalidModification);
             return p;
         }
+
+        // Step 4.
         if !self.Service().Device().Gatt().Connected() {
             p.reject_error(p_cx, Network);
             return p;
         }
 
+        // TODO: Step 5 - 6: Implement representedCharacteristic internal slot for BluetoothRemoteGATTCharacteristic.
+
+        // TODO: Step 7: Implement the `connection-checking-wrapper` algorithm for BluetoothRemoteGATTServer.
+
+        // Step 7.1.
+        // Note: May make this check in the lower level too.
         if !(self.Properties().Write() ||
              self.Properties().WriteWithoutResponse() ||
              self.Properties().AuthenticatedSignedWrites()) {
             p.reject_error(p_cx, NotSupported);
             return p;
         }
+
+        // Note: Remaining substeps of Step 7 are implemented in components/bluetooth/lib.rs in writeValue function
+        // and in handle_response function.
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
             BluetoothRequest::WriteValue(self.get_instance_id(), value, sender)).unwrap();
@@ -220,22 +269,33 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     fn StartNotifications(&self) -> Rc<Promise> {
         let p = Promise::new(&self.global());
         let p_cx = p.global().get_cx();
+
         // Step 1.
         if uuid_is_blocklisted(self.uuid.as_ref(), Blocklist::Reads) {
             p.reject_error(p_cx, Security);
             return p;
         }
-        // Step 3.
+
+        // TODO: Step 2 - 3: Implement representedCharacteristic internal slot for BluetoothRemoteGATTCharacteristic.
+
+        // Step 4.
+        // Note: May make this check in the lower level too.
         if !(self.Properties().Notify() ||
              self.Properties().Indicate()) {
             p.reject_error(p_cx, NotSupported);
             return p;
         }
+
+        // TODO: Step 5: Implement `active notification context set` for BluetoothRemoteGATTCharacteristic.
+
         // Step 6.
         if !self.Service().Device().Gatt().Connected() {
             p.reject_error(p_cx, Network);
             return p;
         }
+
+        // Note: Steps 7 - 11 are implemented in components/bluetooth/lib.rs in enable_notification function
+        // and in handle_response function.
         let sender = response_async(&p, self);
         self.get_bluetooth_thread().send(
             BluetoothRequest::EnableNotification(self.get_instance_id(),
@@ -249,6 +309,12 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
     fn StopNotifications(&self) -> Rc<Promise> {
         let p = Promise::new(&self.global());
         let sender = response_async(&p, self);
+
+        // TODO: Step 1 - 4: Implement representedCharacteristic internal slot and
+        // `active notification context set` for BluetoothRemoteGATTCharacteristic,
+
+        // Note: Part of Step 4 and Step 5 are implemented in components/bluetooth/lib.rs in enable_notification
+        // function and in handle_response function.
         self.get_bluetooth_thread().send(
             BluetoothRequest::EnableNotification(self.get_instance_id(),
                                                  false,
@@ -260,6 +326,8 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
 impl AsyncBluetoothListener for BluetoothRemoteGATTCharacteristic {
     fn handle_response(&self, response: BluetoothResponse, promise_cx: *mut JSContext, promise: &Rc<Promise>) {
         match response {
+            // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-getdescriptor
+            // Step 7.
             BluetoothResponse::GetDescriptor(descriptor) => {
                 let context = self.service.get().get_device().get_context();
                 let mut descriptor_map = context.get_descriptor_map().borrow_mut();
@@ -273,6 +341,8 @@ impl AsyncBluetoothListener for BluetoothRemoteGATTCharacteristic {
                 descriptor_map.insert(descriptor.instance_id, MutHeap::new(&bt_descriptor));
                 promise.resolve_native(promise_cx, &bt_descriptor);
             },
+            // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-getdescriptors
+            // Step 7.
             BluetoothResponse::GetDescriptors(descriptors_vec) => {
                 let mut descriptors = vec!();
                 let context = self.service.get().get_device().get_context();
@@ -294,17 +364,42 @@ impl AsyncBluetoothListener for BluetoothRemoteGATTCharacteristic {
                 }
                 promise.resolve_native(promise_cx, &descriptors);
             },
+            // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-readvalue
             BluetoothResponse::ReadValue(result) => {
+                // TODO: Step 5.5.1: Implement activeAlgorithms internal slot for BluetoothRemoteGATTServer.
+
+                // Step 5.5.2.
+                // TODO(#5014): Replace ByteString with ArrayBuffer when ArrayBuffer is implemented.
                 let value = ByteString::new(result);
                 *self.value.borrow_mut() = Some(value.clone());
+
+                // TODO: Step 5.5.3: Fire event characteristicvaluechanged.
+
+                // Step 5.5.4.
                 promise.resolve_native(promise_cx, &value);
             },
+            // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-writevalue
             BluetoothResponse::WriteValue(result) => {
+                // TODO: Step 7.5.1: Implement activeAlgorithms internal slot for BluetoothRemoteGATTServer.
+
+                // Step 7.5.2.
+                // TODO(#5014): Replace ByteString with a DataView wrapping a new ArrayBuffer
+                // when ArrayBuffer is implemented.
                 let value = ByteString::new(result);
                 *self.value.borrow_mut() = Some(value.clone());
+
+                // Step 7.5.3.
+                // TODO: Resolve promise with undefined instead of a value.
                 promise.resolve_native(promise_cx, &value);
             },
+            // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-startnotifications
+            // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattcharacteristic-stopnotifications
             BluetoothResponse::EnableNotification(_result) => {
+                // (StartNotification) TODO: Step 10:  Implement `active notification context set`
+                // for BluetoothRemoteGATTCharacteristic.
+
+                // (StartNotification) Step 11.
+                // (StopNotification) Step 5.
                 promise.resolve_native(promise_cx, self);
             },
             _ => promise.reject_error(promise_cx, Error::Type("Something went wrong...".to_owned())),
