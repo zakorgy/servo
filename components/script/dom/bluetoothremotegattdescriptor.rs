@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use bluetooth_traits::{BluetoothRequest, BluetoothResponse};
+use bluetooth_traits::{BluetoothRequest, BluetoothResponse, GATTLevel};
 use bluetooth_traits::blocklist::{Blocklist, uuid_is_blocklisted};
 use dom::bindings::cell::DOMRefCell;
 use dom::bindings::codegen::Bindings::BluetoothDeviceBinding::BluetoothDeviceMethods;
@@ -20,7 +20,7 @@ use dom::bluetooth::{AsyncBluetoothListener, response_async};
 use dom::bluetoothremotegattcharacteristic::{BluetoothRemoteGATTCharacteristic, MAXIMUM_ATTRIBUTE_LENGTH};
 use dom::globalscope::GlobalScope;
 use dom::promise::Promise;
-use ipc_channel::ipc::IpcSender;
+use ipc_channel::ipc::{self, IpcSender};
 use js::jsapi::JSContext;
 use std::rc::Rc;
 
@@ -66,6 +66,19 @@ impl BluetoothRemoteGATTDescriptor {
 
     fn get_instance_id(&self) -> String {
         self.instance_id.clone()
+    }
+
+    pub fn is_represented_descriptor_null(&self) -> bool {
+        let (sender, receiver) = ipc::channel().unwrap();
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::IsRepresentedNull(self.get_instance_id(), GATTLevel::Descriptor, sender)).unwrap();
+        let result = receiver.recv().unwrap();
+        result.unwrap_or(true)
+    }
+
+    pub fn set_represented_descriptor_to_null(&self) {
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::SetRepresentedToNull(self.get_instance_id(), GATTLevel::Descriptor)).unwrap()
     }
 }
 

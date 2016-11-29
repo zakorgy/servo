@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use bluetooth_traits::{BluetoothRequest, BluetoothResponse};
+use bluetooth_traits::{BluetoothRequest, BluetoothResponse, GATTLevel};
 use bluetooth_traits::blocklist::{Blocklist, uuid_is_blocklisted};
 use dom::bindings::codegen::Bindings::BluetoothDeviceBinding::BluetoothDeviceMethods;
 use dom::bindings::codegen::Bindings::BluetoothRemoteGATTServerBinding::BluetoothRemoteGATTServerMethods;
@@ -21,7 +21,7 @@ use dom::bluetoothuuid::{BluetoothCharacteristicUUID, BluetoothServiceUUID, Blue
 use dom::eventtarget::EventTarget;
 use dom::globalscope::GlobalScope;
 use dom::promise::Promise;
-use ipc_channel::ipc::IpcSender;
+use ipc_channel::ipc::{self, IpcSender};
 use js::jsapi::JSContext;
 use std::rc::Rc;
 
@@ -74,6 +74,19 @@ impl BluetoothRemoteGATTService {
 
     fn get_instance_id(&self) -> String {
         self.instance_id.clone()
+    }
+
+    pub fn is_represented_service_null(&self) -> bool {
+        let (sender, receiver) = ipc::channel().unwrap();
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::IsRepresentedNull(self.get_instance_id(), GATTLevel::Service, sender)).unwrap();
+        let result = receiver.recv().unwrap();
+        result.unwrap_or(true)
+    }
+
+    pub fn set_represented_service_to_null(&self) {
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::SetRepresentedToNull(self.get_instance_id(), GATTLevel::Service)).unwrap()
     }
 }
 

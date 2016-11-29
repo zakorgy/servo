@@ -17,7 +17,7 @@ pub mod test;
 
 use bluetooth_traits::{BluetoothCharacteristicMsg, BluetoothDescriptorMsg, BluetoothServiceMsg};
 use bluetooth_traits::{BluetoothDeviceMsg, BluetoothRequest, BluetoothResponse};
-use bluetooth_traits::{BluetoothError, BluetoothResponseResult, BluetoothResult};
+use bluetooth_traits::{BluetoothError, BluetoothResponseResult, BluetoothResult, GATTLevel};
 use bluetooth_traits::blocklist::{uuid_is_blocklisted, Blocklist};
 use bluetooth_traits::scanfilter::{BluetoothScanfilter, BluetoothScanfilterSequence, RequestDeviceoptions};
 use device::bluetooth::{BluetoothAdapter, BluetoothDevice, BluetoothGATTCharacteristic};
@@ -281,6 +281,12 @@ impl BluetoothManager {
                 BluetoothRequest::Test(data_set_name, sender) => {
                     self.test(data_set_name, sender)
                 }
+                BluetoothRequest::IsRepresentedNull(id, gatt_level, sender) => {
+                    self.is_invalid_id(id, gatt_level, sender)
+                }
+                BluetoothRequest::SetRepresentedToNull(id, gatt_level) => {
+                    self.remove_id_from_caches(id, gatt_level)
+                }
                 BluetoothRequest::Exit => {
                     break
                 },
@@ -307,6 +313,58 @@ impl BluetoothManager {
             },
             Err(error) => {
                 let _ = sender.send(Err(BluetoothError::Type(error.description().to_owned())));
+            },
+        }
+    }
+
+    fn is_invalid_id(&self, id: String, gatt_level: GATTLevel, sender: IpcSender<BluetoothResult<bool>>) {
+        match gatt_level {
+            GATTLevel::Device => {
+                return drop(sender.send(Ok(!self.cached_devices.contains_key(&id) ||
+                                           !self.address_to_id.values().any(|v| v == &id))));
+            },
+
+            GATTLevel::Service => {
+                return drop(sender.send(Ok(!self.cached_services.contains_key(&id) ||
+                                           !self.service_to_device.contains_key(&id))));
+            }
+
+            GATTLevel::Characteristic => {
+                return drop(sender.send(Ok(!self.cached_characteristics.contains_key(&id) ||
+                                           !self.characteristic_to_service.contains_key(&id))));
+            }
+
+            GATTLevel::Descriptor => {
+                return drop(sender.send(Ok(!self.cached_descriptors.contains_key(&id) ||
+                                           !self.descriptor_to_characteristic.contains_key(&id))));
+            }
+        }
+    }
+
+    fn remove_id_from_caches(&mut self, id: String, gatt_level: GATTLevel) {
+        match gatt_level {
+            GATTLevel::Device => {
+                self.cached_devices.remove(&id);
+                let address = match self.address_to_id.iter().find(|&(_, v)| v == &id) {
+                    Some((a, _)) => a.clone(),
+                    None => return,
+                };
+                self.address_to_id.remove(&address);
+            },
+
+            GATTLevel::Service => {
+                self.cached_services.remove(&id);
+                self.service_to_device.remove(&id);
+            },
+
+            GATTLevel::Characteristic => {
+                self.cached_characteristics.remove(&id);
+                self.characteristic_to_service.remove(&id);
+            },
+
+            GATTLevel::Descriptor => {
+                self.cached_descriptors.remove(&id);
+                self.descriptor_to_characteristic.remove(&id);
             },
         }
     }

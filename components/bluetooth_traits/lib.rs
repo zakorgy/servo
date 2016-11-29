@@ -67,6 +67,14 @@ pub struct BluetoothDescriptorMsg {
     pub instance_id: String,
 }
 
+#[derive(Deserialize, Serialize)]
+pub enum GATTLevel {
+    Device,
+    Service,
+    Characteristic,
+    Descriptor,
+}
+
 pub type BluetoothServicesMsg = Vec<BluetoothServiceMsg>;
 
 pub type BluetoothCharacteristicsMsg = Vec<BluetoothCharacteristicMsg>;
@@ -93,6 +101,8 @@ pub enum BluetoothRequest {
     ReadValue(String, IpcSender<BluetoothResponseResult>),
     WriteValue(String, Vec<u8>, IpcSender<BluetoothResponseResult>),
     EnableNotification(String, bool, IpcSender<BluetoothResponseResult>),
+    IsRepresentedNull(String, GATTLevel, IpcSender<BluetoothResult<bool>>),
+    SetRepresentedToNull(String, GATTLevel),
     Test(String, IpcSender<BluetoothResult<()>>),
     Exit,
 }

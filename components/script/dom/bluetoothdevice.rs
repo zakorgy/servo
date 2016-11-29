@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+use bluetooth_traits::{BluetoothRequest, GATTLevel};
 use dom::bindings::codegen::Bindings::BluetoothDeviceBinding;
 use dom::bindings::codegen::Bindings::BluetoothDeviceBinding::BluetoothDeviceMethods;
 use dom::bindings::codegen::Bindings::EventHandlerBinding::EventHandlerNonNull;
@@ -13,6 +14,7 @@ use dom::bluetoothadvertisingdata::BluetoothAdvertisingData;
 use dom::bluetoothremotegattserver::BluetoothRemoteGATTServer;
 use dom::eventtarget::EventTarget;
 use dom::globalscope::GlobalScope;
+use ipc_channel::ipc::{self, IpcSender};
 
 // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothdevice
 #[dom_struct]
@@ -57,6 +59,23 @@ impl BluetoothDevice {
 
     pub fn get_context(&self) -> Root<Bluetooth> {
         self.context.get()
+    }
+
+    fn get_bluetooth_thread(&self) -> IpcSender<BluetoothRequest> {
+        self.global().as_window().bluetooth_thread()
+    }
+
+    pub fn is_represented_device_null(&self) -> bool {
+        let (sender, receiver) = ipc::channel().unwrap();
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::IsRepresentedNull(self.Id().to_string(), GATTLevel::Device, sender)).unwrap();
+        let result = receiver.recv().unwrap();
+        result.unwrap_or(true)
+    }
+
+    pub fn set_represented_device_to_null(&self) {
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::SetRepresentedToNull(self.Id().to_string(), GATTLevel::Device)).unwrap()
     }
 }
 
