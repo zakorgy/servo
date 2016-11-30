@@ -112,6 +112,10 @@ impl Bluetooth {
                            BluetoothBinding::Wrap)
     }
 
+    pub fn get_device_map(&self) -> &DOMRefCell<HashMap<String, MutHeap<JS<BluetoothDevice>>>> {
+        &self.device_instance_map
+    }
+
     pub fn get_service_map(&self) -> &DOMRefCell<HashMap<String, MutHeap<JS<BluetoothRemoteGATTService>>>> {
         &self.service_instance_map
     }

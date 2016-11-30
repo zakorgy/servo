@@ -202,6 +202,16 @@ fn is_mock_adapter(adapter: &BluetoothAdapter) -> bool {
     }
 }
 
+fn return_key_if_value_equals<K, V>(tupple: (&K, &V), value: &V) -> Option<K>
+    where K: Clone,
+          V: PartialEq
+{
+    if value == tupple.1 {
+        return Some(tupple.0.clone());
+    }
+    None
+}
+
 pub struct BluetoothManager {
     receiver: IpcReceiver<BluetoothRequest>,
     adapter: Option<BluetoothAdapter>,
@@ -287,6 +297,9 @@ impl BluetoothManager {
                 BluetoothRequest::SetRepresentedToNull(id, gatt_level) => {
                     self.remove_id_from_caches(id, gatt_level)
                 }
+                BluetoothRequest::GetInstanceIds(id, sender) => {
+                    self.get_ids_for_device(id, sender)
+                }
                 BluetoothRequest::Exit => {
                     break
                 },
@@ -367,6 +380,39 @@ impl BluetoothManager {
                 self.descriptor_to_characteristic.remove(&id);
             },
         }
+    }
+
+    fn get_ids_for_device(&self,
+                          device_id: String,
+                          sender: IpcSender<BluetoothResult<(Vec<String>, Vec<String>, Vec<String>)>>) {
+        let services: Vec<String> = self.service_to_device
+                                        .iter()
+                                        .filter_map(|t| return_key_if_value_equals(t, &device_id)).collect();
+
+        /*let mut characteristics: Vec<String> = Vec::new();
+
+        for service in services {
+            characteristics.extend_from_slice(
+                &self.characteristic_to_service
+                     .iter()
+                     .filter_map(|t| return_key_if_value_equals(t, &service)).collect::<Vec<String>>());
+        }*/
+
+        let characteristics: Vec<String> =
+            services.iter()
+                    .map(|s| self.characteristic_to_service
+                                 .iter()
+                                 .filter_map(|t| return_key_if_value_equals(t, &s)).collect())
+                    .collect();
+
+        let descriptors: Vec<String> =
+            characteristics.iter()
+                            .map(|c| self.descriptor_to_characteristic
+                                         .iter()
+                                         .filter_map(|t| return_key_if_value_equals(t, &c)).collect())
+                            .collect();
+
+        return drop(sender.send(Ok((services, characteristics, descriptors))));
     }
 
     // Adapter

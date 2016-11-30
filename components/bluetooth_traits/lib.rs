@@ -103,6 +103,7 @@ pub enum BluetoothRequest {
     EnableNotification(String, bool, IpcSender<BluetoothResponseResult>),
     IsRepresentedNull(String, GATTLevel, IpcSender<BluetoothResult<bool>>),
     SetRepresentedToNull(String, GATTLevel),
+    GetInstanceIds(String, IpcSender<BluetoothResult<(Vec<String>, Vec<String>, Vec<String>)>>),
     Test(String, IpcSender<BluetoothResult<()>>),
     Exit,
 }

@@ -6,6 +6,7 @@ use bluetooth_traits::{BluetoothRequest, GATTLevel};
 use dom::bindings::codegen::Bindings::BluetoothDeviceBinding;
 use dom::bindings::codegen::Bindings::BluetoothDeviceBinding::BluetoothDeviceMethods;
 use dom::bindings::codegen::Bindings::EventHandlerBinding::EventHandlerNonNull;
+use dom::bindings::inheritance::Castable;
 use dom::bindings::js::{JS, Root, MutHeap, MutNullableHeap};
 use dom::bindings::reflector::{Reflectable, reflect_dom_object};
 use dom::bindings::str::DOMString;
@@ -76,6 +77,58 @@ impl BluetoothDevice {
     pub fn set_represented_device_to_null(&self) {
         self.get_bluetooth_thread().send(
             BluetoothRequest::SetRepresentedToNull(self.Id().to_string(), GATTLevel::Device)).unwrap()
+    }
+
+    pub fn get_instance_ids_from_realm(&self) -> (Vec<String>, Vec<String>, Vec<String>) {
+        let (sender, receiver) = ipc::channel().unwrap();
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::GetInstanceIds(self.Id().to_string(), sender)).unwrap();
+        let result = receiver.recv().unwrap();
+        result.unwrap_or((Vec::new(), Vec::new(), Vec::new()))
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#clean-up-the-disconnected-device
+    #[allow(unrooted_must_root)]
+    pub fn clean_up_disconnected_device(&self) {
+        // Step 1.
+        self.Gatt().set_connected(false);
+
+        // TODO: Step 2: Implement activeAlgorithms internal slot for BluetoothRemoteGATTServer.
+
+        // Step 3.
+        // Note: Try without this variable binding!!!
+        let context = self.get_context();
+
+        let (service_ids, characteristic_ids, descriptor_ids) = self.get_instance_ids_from_realm();
+
+        // Step 4, 5.
+        let mut service_map = context.get_service_map().borrow_mut();
+        for id in service_ids {
+            if let Some(service) = service_map.remove(&id) {
+                service.get().set_represented_service_to_null();
+            }
+        }
+
+        // Step 4, 6.
+        // TODO: Implement `active notification context set` for BluetoothRemoteGATTCharacteristic.
+        let mut characteristic_map = context.get_characteristic_map().borrow_mut();
+        for id in characteristic_ids {
+            if let Some(characteristic) = characteristic_map.remove(&id) {
+                characteristic.get().set_represented_characteristic_to_null();
+            }
+        }
+
+        // Step 4, 7.
+        let mut descriptor_map = context.get_descriptor_map().borrow_mut();
+        for id in descriptor_ids {
+            if let Some(descriptor) = descriptor_map.remove(&id) {
+                descriptor.get().set_represented_descriptor_to_null();
+            }
+        }
+
+        // Step 8.
+        self.upcast::<EventTarget>().fire_bubbling_event(atom!("gattserverdisconnected"));
+
     }
 }
 
