@@ -105,7 +105,10 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
         let p = Promise::new(&self.global());
         let sender = response_async(&p, self);
 
-        // TODO: Step 2: Implement representedDevice internal slot for BluetoothDevice.
+        // Step 2.
+        if self.Device().is_represented_device_null() {
+            p.reject_error(p.global().get_cx(), Error::Network);
+        }
 
         // TODO: Step 3: Check if the UA is currently using the Bluetooth system.
 
@@ -115,7 +118,7 @@ impl BluetoothRemoteGATTServerMethods for BluetoothRemoteGATTServer {
         // and the` garbage-collect the connection` algorithm.
 
         // Note: Steps 5.1.1 and 5.1.3 are in components/bluetooth/lib.rs in the gatt_server_connect function.
-        // Steps 5.2.4 - 5.2.5  are in response function.
+        // Steps 5.2.3 - 5.2.5  are in response function.
         self.get_bluetooth_thread().send(
             BluetoothRequest::GATTServerConnect(String::from(self.Device().Id()), sender)).unwrap();
         // Step 5: return promise.
@@ -226,6 +229,14 @@ impl AsyncBluetoothListener for BluetoothRemoteGATTServer {
         match response {
             // https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect
             BluetoothResponse::GATTServerConnect(connected) => {
+                // Step 5.2.3
+                if self.Device().is_represented_device_null() {
+                    if let Err(e) = self.garbage_collect_the_connection() {
+                        promise.reject_error(promise_cx, Error::from(e));
+                    }
+                    promise.reject_error(promise_cx, Error::Network);
+                }
+
                 // Step 5.2.4.
                 self.connected.set(connected);
 
