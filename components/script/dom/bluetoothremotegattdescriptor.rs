@@ -138,7 +138,7 @@ impl BluetoothRemoteGATTDescriptorMethods for BluetoothRemoteGATTDescriptor {
             return p;
         }
 
-        // TODO: Step 5 - 6: Implement representedCharacteristic internal slot for BluetoothRemoteGATTCharacteristic.
+        // TODO: Step 5 - 6: Implement representedDescriptor internal slot for BluetoothRemoteGATTDescriptor.
 
         // TODO: Step 7: Implement the `connection-checking-wrapper` algorithm for BluetoothRemoteGATTServer.
         // Note: Substeps of Step 7 are implemented in components/bluetooth/lib.rs in writeValue function

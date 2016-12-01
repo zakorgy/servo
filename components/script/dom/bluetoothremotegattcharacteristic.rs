@@ -129,7 +129,7 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
             return p;
         }
 
-        // TODO: Step 5: Implement representedService internal slot for BluetoothRemoteGATTService.
+        // TODO: Step 5: Implement representedCharacteristic internal slot for BluetoothRemoteGATTCharacteristic.
 
         // Note: Steps 6 - 7 are implemented in components/bluetooth/lib.rs in get_descriptor function
         // and in handle_response function.
@@ -172,7 +172,7 @@ impl BluetoothRemoteGATTCharacteristicMethods for BluetoothRemoteGATTCharacteris
             return p;
         }
 
-        // TODO: Step 5: Implement representedService internal slot for BluetoothRemoteGATTService.
+        // TODO: Step 5: Implement representedCharacteristic internal slot for BluetoothRemoteGATTCharacteristic.
 
         // Note: Steps 6 - 7 are implemented in components/bluetooth/lib.rs in get_descriptors function
         // and in handle_response function.
