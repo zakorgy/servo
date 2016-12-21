@@ -10,6 +10,7 @@ use dom::bindings::codegen::Bindings::BluetoothDeviceBinding::BluetoothDeviceMet
 use dom::bindings::codegen::Bindings::BluetoothRemoteGATTServerBinding::BluetoothRemoteGATTServerMethods;
 use dom::bindings::codegen::Bindings::EventHandlerBinding::EventHandlerNonNull;
 use dom::bindings::error::Error;
+use dom::bindings::error::ErrorResult;
 use dom::bindings::inheritance::Castable;
 use dom::bindings::js::{MutJS, MutNullableJS, Root};
 use dom::bindings::reflector::{DomObject, reflect_dom_object};
@@ -73,7 +74,7 @@ impl BluetoothDevice {
                            BluetoothDeviceBinding::Wrap)
     }
 
-    pub fn get_context(&self) -> Root<Bluetooth> {
+    fn get_context(&self) -> Root<Bluetooth> {
         self.context.get()
     }
 
@@ -180,6 +181,30 @@ impl BluetoothDevice {
 
         // Step 8.
         self.upcast::<EventTarget>().fire_bubbling_event(atom!("gattserverdisconnected"));
+    }
+
+    // https://webbluetoothcg.github.io/web-bluetooth/#garbage-collect-the-connection
+    #[allow(unrooted_must_root)]
+    pub fn garbage_collect_the_connection(&self) -> ErrorResult {
+        // Step 1: TODO: Check if other systems using this device.
+
+        // Step 2.
+        let context = self.get_context();
+        for (id, device) in context.get_device_map().borrow().iter() {
+            // Step 2.1 - 2.2.
+            if id == &self.Id().to_string() {
+                if device.get().Gatt().Connected() {
+                    return Ok(());
+                }
+                // TODO: Step 2.3: Implement activeAlgorithms internal slot for BluetoothRemoteGATTServer.
+            }
+        }
+
+        // Step 3.
+        let (sender, receiver) = ipc::channel().unwrap();
+        self.get_bluetooth_thread().send(
+            BluetoothRequest::GATTServerDisconnect(String::from(self.Id()), sender)).unwrap();
+        receiver.recv().unwrap().map_err(Error::from)
     }
 }
 

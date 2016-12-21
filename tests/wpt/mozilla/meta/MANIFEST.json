@@ -6944,22 +6944,10 @@
             "url": "/_mozilla/mozilla/bluetooth/getCharacteristics/disconnect-called-during.html"
           }
         ],
-        "mozilla/bluetooth/getCharacteristics/disconnect-invalidates-objects-with-uuid.html": [
-          {
-            "path": "mozilla/bluetooth/getCharacteristics/disconnect-invalidates-objects-with-uuid.html",
-            "url": "/_mozilla/mozilla/bluetooth/getCharacteristics/disconnect-invalidates-objects-with-uuid.html"
-          }
-        ],
         "mozilla/bluetooth/getCharacteristics/disconnect-invalidates-objects.html": [
           {
             "path": "mozilla/bluetooth/getCharacteristics/disconnect-invalidates-objects.html",
             "url": "/_mozilla/mozilla/bluetooth/getCharacteristics/disconnect-invalidates-objects.html"
-          }
-        ],
-        "mozilla/bluetooth/getCharacteristics/get-different-characteristics-after-reconnection-with-uuid.html": [
-          {
-            "path": "mozilla/bluetooth/getCharacteristics/get-different-characteristics-after-reconnection-with-uuid.html",
-            "url": "/_mozilla/mozilla/bluetooth/getCharacteristics/get-different-characteristics-after-reconnection-with-uuid.html"
           }
         ],
         "mozilla/bluetooth/getCharacteristics/get-different-characteristics-after-reconnection.html": [
@@ -7148,22 +7136,10 @@
             "url": "/_mozilla/mozilla/bluetooth/getDescriptors/disconnect-called-during.html"
           }
         ],
-        "mozilla/bluetooth/getDescriptors/disconnect-invalidates-objects-with-uuid.html": [
-          {
-            "path": "mozilla/bluetooth/getDescriptors/disconnect-invalidates-objects-with-uuid.html",
-            "url": "/_mozilla/mozilla/bluetooth/getDescriptors/disconnect-invalidates-objects-with-uuid.html"
-          }
-        ],
         "mozilla/bluetooth/getDescriptors/disconnect-invalidates-objects.html": [
           {
             "path": "mozilla/bluetooth/getDescriptors/disconnect-invalidates-objects.html",
             "url": "/_mozilla/mozilla/bluetooth/getDescriptors/disconnect-invalidates-objects.html"
-          }
-        ],
-        "mozilla/bluetooth/getDescriptors/get-different-descriptors-after-reconnection-with-uuid.html": [
-          {
-            "path": "mozilla/bluetooth/getDescriptors/get-different-descriptors-after-reconnection-with-uuid.html",
-            "url": "/_mozilla/mozilla/bluetooth/getDescriptors/get-different-descriptors-after-reconnection-with-uuid.html"
           }
         ],
         "mozilla/bluetooth/getDescriptors/get-different-descriptors-after-reconnection.html": [
@@ -7310,12 +7286,6 @@
             "url": "/_mozilla/mozilla/bluetooth/getPrimaryServices/disconnect-called-during.html"
           }
         ],
-        "mozilla/bluetooth/getPrimaryServices/disconnect-invalidates-objects-with-uuid.html": [
-          {
-            "path": "mozilla/bluetooth/getPrimaryServices/disconnect-invalidates-objects-with-uuid.html",
-            "url": "/_mozilla/mozilla/bluetooth/getPrimaryServices/disconnect-invalidates-objects-with-uuid.html"
-          }
-        ],
         "mozilla/bluetooth/getPrimaryServices/disconnect-invalidates-objects.html": [
           {
             "path": "mozilla/bluetooth/getPrimaryServices/disconnect-invalidates-objects.html",
@@ -7332,12 +7302,6 @@
           {
             "path": "mozilla/bluetooth/getPrimaryServices/disconnected-device.html",
             "url": "/_mozilla/mozilla/bluetooth/getPrimaryServices/disconnected-device.html"
-          }
-        ],
-        "mozilla/bluetooth/getPrimaryServices/get-different-services-after-reconnection-with-uuid.html": [
-          {
-            "path": "mozilla/bluetooth/getPrimaryServices/get-different-services-after-reconnection-with-uuid.html",
-            "url": "/_mozilla/mozilla/bluetooth/getPrimaryServices/get-different-services-after-reconnection-with-uuid.html"
           }
         ],
         "mozilla/bluetooth/getPrimaryServices/get-different-services-after-reconnection.html": [
