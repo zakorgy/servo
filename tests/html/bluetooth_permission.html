@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<title>Bluetooth Permission Request Test</title>
+<body>
+    <button type="button" onclick="onRequestButtonClick()">request</button>
+    <button type="button" onclick="onQueryButtonClick()">query</button>
+    <!--button type="button" onclick="onRevokeButtonClick()">revoke</button-->
+    <!--input type="text" id="permissionName" value="geolocation"></input-->
+    <pre id="log"></pre>
+    <script>
+    window.testRunner.setBluetoothMockDataSet('HeartRateAdapter');
+
+    function onRequestButtonClick() {
+        window.navigator.permissions.request({
+            name: 'bluetooth',
+            filters: [{
+                services: ['heart_rate'],
+            }],
+            deviceId: "",
+            optionalServices: [],
+            acceptAllDevices: false,
+        })
+        .then(r => {
+            log("Result is instance of PermissionStatus: " + (r instanceof PermissionStatus));
+            log("Result is instance of BluetoothPermissionResult subclass: " + (r instanceof BluetoothPermissionResult));
+            log("Result contains device: " + r.devices()[0].name);
+            log("State of result: " + r.state);
+
+            let device = r.devices()[0];
+            if (device) {
+                sessionStorage.lastDevice = device.id;
+                log("Device id stored:" + device.id);
+            }
+        })
+        .catch(err => log(err));
+    }
+
+    function onQueryButtonClick() {
+        log("The id of the last device: " + sessionStorage.lastDevice);
+        window.navigator.permissions.query({
+            name: "bluetooth",
+            deviceId: sessionStorage.lastDevice,
+        })
+        .then(r => {
+            log("Result is instance of PermissionStatus: " + (r instanceof PermissionStatus));
+            log("Result is instance of BluetoothPermissionResult subclass: " + (r instanceof BluetoothPermissionResult));
+            log("Result contains device: " + r.devices()[0].name);
+            log("State of result: " + r.state);
+        })
+        .catch(err => log(err));
+    }
+
+    /*function onRevokeButtonClick() {
+        let permissionName = document.getElementById('permissionName').value;
+        let permissionDescriptor = {name: permissionName};
+        window.navigator.permissions.revoke(permissionDescriptor)
+        .then(status => log(permissionName + "'s permission status is: " + status.state))
+        .catch(err => log(err));
+    }*/
+
+    function log(line) {
+        document.getElementById("log").textContent += line + '\n';
+    }
+    </script>
+</body>
+</html>

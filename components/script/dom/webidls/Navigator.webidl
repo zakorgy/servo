@@ -61,4 +61,10 @@ interface NavigatorCookies {
 // https://w3c.github.io/webvr/#interface-navigator
 partial interface Navigator {
   [SameObject, Pref="dom.webvr.enabled"] readonly attribute VR vr;
+ };
+
+// https://w3c.github.io/permissions/#navigator-and-workernavigator-extension
+[Exposed=(Window)]
+partial interface Navigator {
+  readonly attribute Permissions permissions;
 };
