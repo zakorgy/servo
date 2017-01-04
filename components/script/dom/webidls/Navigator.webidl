@@ -57,3 +57,9 @@ interface NavigatorPlugins {
 interface NavigatorCookies {
   readonly attribute boolean cookieEnabled;
 };
+
+// https://w3c.github.io/permissions/#navigator-and-workernavigator-extension
+[Exposed=(Window)]
+partial interface Navigator {
+  readonly attribute Permissions permissions;
+};

@@ -10,6 +10,7 @@ use dom::bindings::str::DOMString;
 use dom::bluetooth::Bluetooth;
 use dom::mimetypearray::MimeTypeArray;
 use dom::navigatorinfo;
+use dom::permissions::Permissions;
 use dom::pluginarray::PluginArray;
 use dom::serviceworkercontainer::ServiceWorkerContainer;
 use dom::window::Window;
@@ -21,6 +22,7 @@ pub struct Navigator {
     plugins: MutNullableJS<PluginArray>,
     mime_types: MutNullableJS<MimeTypeArray>,
     service_worker: MutNullableJS<ServiceWorkerContainer>,
+    permissions: MutNullableJS<Permissions>,
 }
 
 impl Navigator {
@@ -31,6 +33,7 @@ impl Navigator {
             plugins: Default::default(),
             mime_types: Default::default(),
             service_worker: Default::default(),
+            permissions: Default::default(),
         }
     }
 
@@ -112,6 +115,11 @@ impl NavigatorMethods for Navigator {
     // https://html.spec.whatwg.org/multipage/#dom-navigator-cookieenabled
     fn CookieEnabled(&self) -> bool {
         true
+    }
+
+    // https://w3c.github.io/permissions/#navigator-and-workernavigator-extension
+    fn Permissions(&self) -> Root<Permissions> {
+        self.permissions.or_init(|| Permissions::new(&self.global()))
     }
 
 }
