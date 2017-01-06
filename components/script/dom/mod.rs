@@ -284,6 +284,7 @@ pub mod filelist;
 pub mod filereader;
 pub mod filereadersync;
 pub mod focusevent;
+pub mod foo;
 pub mod forcetouchevent;
 pub mod formdata;
 pub mod globalscope;
