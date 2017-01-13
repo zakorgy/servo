@@ -4,6 +4,7 @@
 
 use core::clone::Clone;
 use dom::bindings::cell::DOMRefCell;
+use dom::bindings::codegen::Bindings::BluetoothPermissionResultBinding::BluetoothPermissionDescriptor;
 use dom::bindings::codegen::Bindings::EventHandlerBinding::EventHandlerNonNull;
 use dom::bindings::codegen::Bindings::PermissionStatusBinding::{self, PermissionDescriptor, PermissionName};
 use dom::bindings::codegen::Bindings::PermissionStatusBinding::{PermissionState, PermissionStatusMethods};
@@ -23,6 +24,7 @@ pub enum PermissionDescriptorType {
     // TODO(zakorgy): Finish this list.
     Undefined,
     Default(PermissionDescriptor),
+    Bluetooth(BluetoothPermissionDescriptor),
 }
 
 #[dom_struct]
@@ -47,7 +49,7 @@ impl PermissionStatus {
                            PermissionStatusBinding::Wrap)
     }
 
-    fn set_query(&self, permission_descriptor: PermissionDescriptorType) {
+    pub fn set_query(&self, permission_descriptor: PermissionDescriptorType) {
         *self.query.borrow_mut() = permission_descriptor;
     }
 
@@ -91,6 +93,29 @@ impl PermissionStatus {
     }
 }
 
+impl HeapSizeOf for BluetoothPermissionDescriptor {
+    fn heap_size_of_children(&self) -> usize {
+        self.parent.heap_size_of_children() +
+        self.acceptAllDevices.heap_size_of_children() +
+        self.deviceId.heap_size_of_children()// +
+        // TODO: Implement heap_size_of for these two
+        // self.filters.heap_size_of_children() +
+        // self.optionalServices.heap_size_of_children()
+    }
+}
+
+#[allow(unsafe_code)]
+unsafe impl JSTraceable for BluetoothPermissionDescriptor {
+    unsafe fn trace(&self, trc: *mut JSTracer) {
+        self.parent.trace(trc);
+        self.acceptAllDevices.trace(trc);
+        self.deviceId.trace(trc);
+        // TODO: Implement trace for these two
+        // self.filters.trace(trc);
+        // self.optionalServices.trace(trc);
+    }
+}
+
 #[allow(unsafe_code)]
 // https://w3c.github.io/permissions/#permission-state
 fn get_descriptors_permission_state(descriptor: &PermissionDescriptorType, obj: *mut JSObject) -> PermissionState {
@@ -99,6 +124,7 @@ fn get_descriptors_permission_state(descriptor: &PermissionDescriptorType, obj: 
     let name = match descriptor {
         // TODO(zakorgy): Finish this list.
         &PermissionDescriptorType::Default(ref desc) => desc.name,
+        &PermissionDescriptorType::Bluetooth(ref desc) => desc.parent.name,
         &PermissionDescriptorType::Undefined => return PermissionState::Denied,
     };
 

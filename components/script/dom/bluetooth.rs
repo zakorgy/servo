@@ -49,7 +49,7 @@ const NAME_PREFIX_ERROR: &'static str = "'namePrefix', if present, must be nonem
 const NAME_TOO_LONG_ERROR: &'static str = "A device name can't be longer than 248 bytes.";
 const SERVICE_DATA_ERROR: &'static str = "'serviceData', if present, must be non-empty to filter devices.";
 const SERVICE_ERROR: &'static str = "'services', if present, must contain at least one service.";
-const OPTIONS_ERROR: &'static str = "Fields of 'options' conflict with each other.
+pub const OPTIONS_ERROR: &'static str = "Fields of 'options' conflict with each other.
  Either 'acceptAllDevices' member must be true, or 'filters' member must be set to a value.";
 
 struct BluetoothContext<T: AsyncBluetoothListener + DomObject> {
@@ -109,10 +109,11 @@ impl Bluetooth {
     }
 
     // https://webbluetoothcg.github.io/web-bluetooth/#request-bluetooth-devices
-    fn request_bluetooth_devices(&self,
-                                 p: &Rc<Promise>,
-                                 filters: &Option<Vec<BluetoothLEScanFilterInit>>,
-                                 optional_services: &Option<Vec<BluetoothServiceUUID>>) {
+    pub fn request_bluetooth_devices(&self,
+                                     p: &Rc<Promise>,
+                                     sender: IpcSender<BluetoothResponseResult>,
+                                     filters: &Option<Vec<BluetoothLEScanFilterInit>>,
+                                     optional_services: &Option<Vec<BluetoothServiceUUID>>) {
         // TODO: Step 1: Triggered by user activation.
 
         // Step 2.2: There are no requiredServiceUUIDS, we scan for all devices.
@@ -170,7 +171,6 @@ impl Bluetooth {
 
         // Note: Steps 6 - 8 are implemented in
         // components/net/bluetooth_thread.rs in request_device function.
-        let sender = response_async(p, self);
         self.get_bluetooth_thread().send(BluetoothRequest::RequestDevice(option, sender)).unwrap();
     }
 }
@@ -449,7 +449,8 @@ impl BluetoothMethods for Bluetooth {
         }
 
         // Step 2.
-        self.request_bluetooth_devices(&p, &option.filters, &option.optionalServices);
+        let sender = response_async(&p, self);
+        self.request_bluetooth_devices(&p, sender, &option.filters, &option.optionalServices);
         //Note: Step 3 - 4. in response function, Step 5. in handle_response function.
         return p;
     }
