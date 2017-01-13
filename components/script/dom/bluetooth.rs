@@ -11,8 +11,10 @@ use core::clone::Clone;
 use dom::bindings::cell::DOMRefCell;
 use dom::bindings::codegen::Bindings::BluetoothBinding::{self, BluetoothDataFilterInit, BluetoothLEScanFilterInit};
 use dom::bindings::codegen::Bindings::BluetoothBinding::{BluetoothMethods, RequestDeviceOptions};
+use dom::bindings::codegen::Bindings::BluetoothPermissionResultBinding::AllowedBluetoothDevice;
+use dom::bindings::codegen::Bindings::BluetoothPermissionResultBinding::BluetoothPermissionData;
 use dom::bindings::codegen::Bindings::EventHandlerBinding::EventHandlerNonNull;
-use dom::bindings::codegen::UnionTypes::StringOrUnsignedLong;
+use dom::bindings::codegen::UnionTypes::{StringOrStringSequence, StringOrUnsignedLong};
 use dom::bindings::error::Error::{self, Network, NotFound, Security, Type};
 use dom::bindings::error::Fallible;
 use dom::bindings::js::{JS, Root};
@@ -28,6 +30,7 @@ use ipc_channel::ipc::{self, IpcSender};
 use ipc_channel::router::ROUTER;
 use js::jsapi::{JSAutoCompartment, JSContext};
 use script_thread::Runnable;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -51,6 +54,74 @@ const SERVICE_DATA_ERROR: &'static str = "'serviceData', if present, must be non
 const SERVICE_ERROR: &'static str = "'services', if present, must contain at least one service.";
 pub const OPTIONS_ERROR: &'static str = "Fields of 'options' conflict with each other.
  Either 'acceptAllDevices' member must be true, or 'filters' member must be set to a value.";
+
+
+thread_local!(pub static EXTRA_PERMISSION_DATA: RefCell<BluetoothPermissionData> =
+              RefCell::new(BluetoothPermissionData { allowedDevices: Vec::new() }));
+
+/*fn add_new_allowed_device(allowed_device: AllowedBluetoothDevice) {
+    EXTRA_PERMISSION_DATA.with(|epd| {
+        epd.borrow_mut().allowedDevices.push(allowed_device);
+    });
+}
+
+fn remove_allowed_device(device_id: DOMString) {
+    EXTRA_PERMISSION_DATA.with(|epd| {
+        epd.borrow_mut().allowedDevices.retain(|d| d.deviceId != device_id);
+    });
+}
+
+fn find_allowed_device(device_id: DOMString) -> Option<AllowedBluetoothDevice> {
+    EXTRA_PERMISSION_DATA.with(|epd| {
+        epd.borrow().allowedDevices.iter().find(|d| d.deviceId == device_id).cloned()
+    })
+}*/
+
+pub fn get_allowed_devices() -> Vec<AllowedBluetoothDevice> {
+    EXTRA_PERMISSION_DATA.with(|epd| {
+        epd.borrow().allowedDevices.clone()
+    })
+}
+
+impl Clone for StringOrStringSequence {
+    fn clone(&self) -> StringOrStringSequence {
+        match self {
+            &StringOrStringSequence::String(ref s) => StringOrStringSequence::String(s.clone()),
+            &StringOrStringSequence::StringSequence(ref v) => StringOrStringSequence::StringSequence(v.clone()),
+        }
+    }
+}
+
+impl Clone for AllowedBluetoothDevice {
+    fn clone(&self) -> AllowedBluetoothDevice {
+        AllowedBluetoothDevice {
+            deviceId: self.deviceId.clone(),
+            mayUseGATT: self.mayUseGATT,
+            allowedServices: self.allowedServices.clone(),
+        }
+    }
+}
+
+impl Clone for BluetoothLEScanFilterInit {
+    fn clone(&self) -> BluetoothLEScanFilterInit {
+        BluetoothLEScanFilterInit {
+            manufacturerData: self.manufacturerData.clone(),
+            name: self.name.clone(),
+            namePrefix: self.namePrefix.clone(),
+            serviceData: self.serviceData.clone(),
+            services: self.services.clone(),
+        }
+    }
+}
+
+impl Clone for BluetoothDataFilterInit {
+    fn clone(&self) -> BluetoothDataFilterInit {
+        BluetoothDataFilterInit {
+            dataPrefix: self.dataPrefix.clone(),
+            mask: self.mask.clone(),
+        }
+    }
+}
 
 struct BluetoothContext<T: AsyncBluetoothListener + DomObject> {
     promise: Option<TrustedPromise>,
@@ -263,7 +334,7 @@ pub fn get_gatt_children<T, F> (
 }
 
 // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing
-fn canonicalize_filter(filter: &BluetoothLEScanFilterInit) -> Fallible<BluetoothScanfilter> {
+pub fn canonicalize_filter(filter: &BluetoothLEScanFilterInit) -> Fallible<BluetoothScanfilter> {
     // Step 1.
     if filter.services.is_none() &&
        filter.name.is_none() &&

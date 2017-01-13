@@ -2,24 +2,27 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use bluetooth_traits::BluetoothResponse;
-use dom::bindings::cell::DOMRefCell;
-use dom::bindings::codegen::Bindings::BluetoothPermissionResultBinding::{self, BluetoothPermissionResultMethods};
-use dom::bindings::codegen::Bindings::NavigatorBinding::NavigatorBinding::NavigatorMethods;
-use dom::bindings::codegen::Bindings::WindowBinding::WindowBinding::WindowMethods;
-use dom::bindings::error::{Error, ErrorResult};
-use dom::bindings::inheritance::Castable;
-use dom::bindings::js::{JS, Root};
-use dom::bindings::reflector::{DomObject, reflect_dom_object};
-use dom::bindings::str::DOMString;
-use dom::bluetooth::{AsyncBluetoothListener, Bluetooth};
-use dom::bluetooth::{OPTIONS_ERROR, response_async};
-use dom::bluetoothdevice::BluetoothDevice;
-use dom::globalscope::GlobalScope;
-use dom::permissionstatus::{PermissionStatus, PermissionDescriptorType};
-use dom::promise::Promise;
-use js::jsapi::JSContext;
-use std::rc::Rc;
+ use bluetooth_traits::{BluetoothRequest, BluetoothResponse};
+ use bluetooth_traits::scanfilter::{BluetoothScanfilter, BluetoothScanfilterSequence};
+ use dom::bindings::cell::DOMRefCell;
+ use dom::bindings::codegen::Bindings::BluetoothPermissionResultBinding::{self, BluetoothPermissionResultMethods};
+ use dom::bindings::codegen::Bindings::NavigatorBinding::NavigatorBinding::NavigatorMethods;
+ use dom::bindings::codegen::Bindings::PermissionStatusBinding::{PermissionState, PermissionStatusMethods};
+ use dom::bindings::codegen::Bindings::WindowBinding::WindowBinding::WindowMethods;
+ use dom::bindings::error::{Error, ErrorResult};
+ use dom::bindings::inheritance::Castable;
+ use dom::bindings::js::{JS, Root};
+ use dom::bindings::reflector::{reflect_dom_object, DomObject};
+ use dom::bindings::str::DOMString;
+ use dom::bluetooth::{AsyncBluetoothListener, Bluetooth};
+ use dom::bluetooth::{canonicalize_filter, get_allowed_devices, response_async, OPTIONS_ERROR};
+ use dom::bluetoothdevice::BluetoothDevice;
+ use dom::globalscope::GlobalScope;
+ use dom::permissionstatus::{PermissionStatus, PermissionDescriptorType};
+ use dom::promise::Promise;
+ use ipc_channel::ipc::{self, IpcSender};
+ use js::jsapi::JSContext;
+ use std::rc::Rc;
 
 const DESCRIPTOR_TYPE_ERROR: &'static str = "Wrong type of descriptor in argument list.";
 
@@ -47,12 +50,107 @@ impl BluetoothPermissionResult {
         self.global().as_window().Navigator().Bluetooth()
     }
 
+    fn get_bluetooth_thread(&self) -> IpcSender<BluetoothRequest> {
+        self.global().as_window().bluetooth_thread()
+    }
+
     pub fn create_from_descriptor(global: &GlobalScope,
                                   descriptor: PermissionDescriptorType)
                                   -> Root<BluetoothPermissionResult> {
         let bt_permission_result = BluetoothPermissionResult::new(global);
         bt_permission_result.upcast::<PermissionStatus>().set_query(descriptor);
         bt_permission_result
+    }
+
+    #[allow(unrooted_must_root)]
+    pub fn permission_query(&self, promise: &Rc<Promise>, cx: *mut JSContext) {
+        let descriptor = self.parent.get_query().borrow();
+        let desc = match *descriptor {
+            PermissionDescriptorType::Bluetooth(ref d) => d,
+            _ => return promise.reject_error(cx, (Error::Type(DESCRIPTOR_TYPE_ERROR.to_owned()))),
+        };
+
+        // Step 2.
+        self.parent.permission_query(&*descriptor);
+
+        // Step 3.
+        if let PermissionState::Denied = self.parent.State() {
+            *self.devices.borrow_mut() = Vec::new();
+            return promise.resolve_native(cx, &self.parent);;
+        }
+
+        // Step 4.
+        let mut matching_devices: Vec<JS<BluetoothDevice>>  = Vec::new();
+
+        // TODO: Step 5: Create a map between the current setting object and BluetoothPermissionData
+        // extra permission data, which replaces the exisitng EXTRA_PERMISSION_DATA global variable.
+        // For this also use the extra permission data constraints from the specification:
+        // https://webbluetoothcg.github.io/web-bluetooth/#dictdef-bluetoothpermissiondata
+
+        let bluetooth = self.get_bluetooth();
+        let device_map = bluetooth.get_device_map().borrow();
+        let mut device_id = String::new();
+
+        // Step 5.
+        let allowed_devices = get_allowed_devices();
+
+        // Step 6.
+        for allowed_device in allowed_devices {
+            // Step 6.1.
+            if let Some(id) = desc.deviceId.clone() {
+                if allowed_device.deviceId != id {
+                    continue;
+                } else {
+                    device_id = String::from(id);
+                }
+            }
+
+            // Step 6.2.
+            // Instead of creating an internal slot we send an ipc message to the Bluetooth thread
+            // to check if one of the filters matches.
+            if let Some(ref filters) = desc.filters {
+                let mut scan_filters: Vec<BluetoothScanfilter> = Vec::new();
+                // TODO: Create an issue for the spec, to make the canonicalization step here.
+                for filter in filters {
+                    match canonicalize_filter(&filter) {
+                        Ok(f) => scan_filters.push(f),
+                        Err(err) => {
+                            promise.reject_error(cx, err);
+                            return;
+                        },
+                    }
+                }
+                let (sender, receiver) = ipc::channel().unwrap();
+                self.get_bluetooth_thread()
+                    .send(BluetoothRequest::MatchesFilter(BluetoothScanfilterSequence::new(scan_filters),
+                                                          device_id.clone(),
+                                                          sender))
+                    .unwrap();
+
+                match receiver.recv().unwrap() {
+                    Ok(true) => {},
+                    Ok(false) => continue,
+                    Err(err) => {
+                        promise.reject_error(cx, Error::from(err));
+                        return;
+                    },
+                }
+            }
+
+            // Step 6.4.
+            // TODO: Implement this correctly, not just using device ids here.
+            // https://webbluetoothcg.github.io/web-bluetooth/#get-the-bluetoothdevice-representing
+            if let Some(ref device) = device_map.get(&device_id) {
+                matching_devices.push(JS::from_ref(&**device.clone()));
+            }
+        }
+
+        // Step 7.
+        *self.devices.borrow_mut() = matching_devices;
+
+        // https://w3c.github.io/permissions/#dom-permissions-query
+        // Step 7.
+        promise.resolve_native(cx, &self.parent);
     }
 
     pub fn permission_request(&self, promise: &Rc<Promise>) -> ErrorResult {

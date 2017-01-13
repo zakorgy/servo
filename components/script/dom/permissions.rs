@@ -101,6 +101,19 @@ fn sync_default_permission_request_call(global: &GlobalScope,
     promise.resolve_native(cx, &status);
 }
 
+// https://w3c.github.io/permissions/#dom-permissions-query
+fn bluetooth_permission_query_call(global: &GlobalScope,
+                                   descriptor: BluetoothPermissionDescriptor,
+                                   promise: &Rc<Promise>,
+                                   cx: *mut JSContext) {
+    // Step 5.
+    let result = BluetoothPermissionResult::create_from_descriptor(
+                    global, PermissionDescriptorType::Bluetooth(descriptor));
+
+    // Step 6.
+    result.permission_query(&promise, cx);
+}
+
 // https://w3c.github.io/permissions/#dom-permissions-request
 fn bluetooth_permission_request_call(global: &GlobalScope,
                                      descriptor: BluetoothPermissionDescriptor,
@@ -134,8 +147,18 @@ impl PermissionsMethods for Permissions {
         };
 
         // Step 2.
-        // TODO: Add support for not default cases.
         match root_desc.name {
+            PermissionName::Bluetooth => {
+                let type_desc = match create_bluetooth_descriptor(cx, permissionDesc) {
+                    Ok(descriptor) => descriptor,
+                    Err(message) => {
+                        p.reject_error(cx, Error::Type(message));
+                        return p;
+                    },
+                };
+                bluetooth_permission_query_call(&self.global(), type_desc, &p, cx);
+            },
+            // TODO: Add support for other cases too.
             _ => {
                 // Step 4: TODO: Add an async implementation instead of sync_default_permission_query_call
                 sync_default_permission_query_call(&self.global(), root_desc, &p, cx);
