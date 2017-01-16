@@ -20,6 +20,7 @@ use std::rc::Rc;
 const ROOT_DESC_CONVERSION_ERROR: &'static str = "Can't convert to an IDL value of type PermissionDescriptor";
 const BT_DESC_CONVERSION_ERROR: &'static str = "Can't convert to an IDL value of type BluetoothPermissionDescriptor";
 
+// https://w3c.github.io/permissions/#permissions
 #[dom_struct]
 pub struct Permissions {
     reflector_: Reflector,
@@ -77,9 +78,11 @@ fn sync_default_permission_query_call(global: &GlobalScope,
                                       cx: *mut JSContext) {
     // Step 5.
     let status = PermissionStatus::create_from_descriptor(global, PermissionDescriptorType::Default(descriptor));
+
     // Step 6.
     // NOTE: `status.query` is the same as descriptor
     status.permission_query(&*status.get_query().borrow());
+
     // Step 7.
     promise.resolve_native(cx, &status);
 }
@@ -91,12 +94,14 @@ fn sync_default_permission_request_call(global: &GlobalScope,
                                         cx: *mut JSContext) {
     // Step 5.
     let status = PermissionStatus::create_from_descriptor(global, PermissionDescriptorType::Default(descriptor));
+
     // Step 6.
     // NOTE: `status.query` is the same as descriptor
     if let Err(err) = status.permission_request(&*status.get_query().borrow()) {
         // Step 7.
-        promise.reject_error(cx, err);
+        return promise.reject_error(cx, err);
     }
+
     // Step 8.
     promise.resolve_native(cx, &status);
 }

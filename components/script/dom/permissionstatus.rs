@@ -27,6 +27,7 @@ pub enum PermissionDescriptorType {
     Bluetooth(BluetoothPermissionDescriptor),
 }
 
+// https://w3c.github.io/permissions/#permissionstatus
 #[dom_struct]
 pub struct PermissionStatus {
     eventtarget: EventTarget,
@@ -184,5 +185,5 @@ impl PermissionStatusMethods for PermissionStatus {
     }
 
     // https://w3c.github.io/permissions/#dom-permissionstatus-onchange
-     event_handler!(onchange, GetOnchange, SetOnchange);
+    event_handler!(onchange, GetOnchange, SetOnchange);
 }
