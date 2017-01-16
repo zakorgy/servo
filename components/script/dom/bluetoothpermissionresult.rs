@@ -100,20 +100,18 @@ impl BluetoothPermissionResult {
         // Step 6.
         for allowed_device in allowed_devices {
             // Step 6.1.
-            if let Some(id) = bluetoth_descriptor.deviceId.clone() {
-                if allowed_device.deviceId != id {
+            if let Some(ref id) = bluetoth_descriptor.deviceId {
+                if &allowed_device.deviceId != id {
                     continue;
                 } else {
-                    device_id = String::from(id);
+                    device_id = String::from(id.as_ref());
                 }
             }
 
-            // Step 6.2.
-            // Instead of creating an internal slot we send an ipc message to the Bluetooth thread
-            // to check if one of the filters matches.
             if let Some(ref filters) = bluetoth_descriptor.filters {
                 let mut scan_filters: Vec<BluetoothScanfilter> = Vec::new();
-                // TODO: Create an issue for the spec, to make the canonicalization step here.
+                // NOTE(zakorgy): This canonicalizing step is missing from the specification.
+                // But there is an issue for this: https://github.com/WebBluetoothCG/web-bluetooth/issues/347
                 for filter in filters {
                     match canonicalize_filter(&filter) {
                         Ok(f) => scan_filters.push(f),
@@ -123,11 +121,14 @@ impl BluetoothPermissionResult {
                     }
                 }
                 let (sender, receiver) = ipc::channel().unwrap();
+
+                // Step 6.2.
+                // Instead of creating an internal slot we send an ipc message to the Bluetooth thread
+                // to check if one of the filters matches.
                 self.get_bluetooth_thread()
                     .send(BluetoothRequest::MatchesFilter(device_id.clone(),
                                                           BluetoothScanfilterSequence::new(scan_filters),
-                                                          sender))
-                    .unwrap();
+                                                          sender)).unwrap();
 
                 match receiver.recv().unwrap() {
                     Ok(true) => (),
@@ -163,8 +164,7 @@ impl BluetoothPermissionResult {
         };
 
         // Step 1.
-        if (options.filters.is_some() && options.acceptAllDevices) ||
-           (options.filters.is_none() && !options.acceptAllDevices) {
+        if options.filters.is_some() == options.acceptAllDevices {
             return Err(Error::Type(OPTIONS_ERROR.to_owned()));
         }
 

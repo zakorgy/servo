@@ -60,26 +60,26 @@ thread_local!(pub static EXTRA_PERMISSION_DATA: RefCell<BluetoothPermissionData>
               RefCell::new(BluetoothPermissionData { allowedDevices: Vec::new() }));
 
 /*fn add_new_allowed_device(allowed_device: AllowedBluetoothDevice) {
-    EXTRA_PERMISSION_DATA.with(|epd| {
-        epd.borrow_mut().allowedDevices.push(allowed_device);
+    EXTRA_PERMISSION_DATA.with(|epdata| {
+        epdata.borrow_mut().allowedDevices.push(allowed_device);
     });
 }
 
 fn remove_allowed_device(device_id: DOMString) {
-    EXTRA_PERMISSION_DATA.with(|epd| {
-        epd.borrow_mut().allowedDevices.retain(|d| d.deviceId != device_id);
+    EXTRA_PERMISSION_DATA.with(|epdata| {
+        epdata.borrow_mut().allowedDevices.retain(|d| d.deviceId != device_id);
     });
 }
 
 fn find_allowed_device(device_id: DOMString) -> Option<AllowedBluetoothDevice> {
-    EXTRA_PERMISSION_DATA.with(|epd| {
-        epd.borrow().allowedDevices.iter().find(|d| d.deviceId == device_id).cloned()
+    EXTRA_PERMISSION_DATA.with(|epdata| {
+        epdata.borrow().allowedDevices.iter().find(|d| d.deviceId == device_id).cloned()
     })
 }*/
 
 pub fn get_allowed_devices() -> Vec<AllowedBluetoothDevice> {
-    EXTRA_PERMISSION_DATA.with(|epd| {
-        epd.borrow().allowedDevices.clone()
+    EXTRA_PERMISSION_DATA.with(|epdata| {
+        epdata.borrow().allowedDevices.clone()
     })
 }
 
