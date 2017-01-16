@@ -253,7 +253,7 @@ impl BluetoothManager {
                 BluetoothRequest::IsRepresentedDeviceNull(id, sender) => {
                     let _ = sender.send(!self.device_is_cached(&id));
                 }
-                BluetoothRequest::MatchesFilter(filters, id, sender) => {
+                BluetoothRequest::MatchesFilter(id, filters, sender) => {
                     let _ = sender.send(self.device_matches_filter(&id, &filters));
                 }
                 BluetoothRequest::Exit => {

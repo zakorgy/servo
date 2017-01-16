@@ -91,7 +91,7 @@ pub enum BluetoothRequest {
     WatchAdvertisements(String, IpcSender<BluetoothResponseResult>),
     SetRepresentedToNull(Vec<String>, Vec<String>, Vec<String>),
     IsRepresentedDeviceNull(String, IpcSender<bool>),
-    MatchesFilter(BluetoothScanfilterSequence, String, IpcSender<BluetoothResult<bool>>),
+    MatchesFilter(String, BluetoothScanfilterSequence, IpcSender<BluetoothResult<bool>>),
     Test(String, IpcSender<BluetoothResult<()>>),
     Exit,
 }
