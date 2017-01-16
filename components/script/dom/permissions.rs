@@ -130,8 +130,9 @@ fn bluetooth_permission_request_call(global: &GlobalScope,
     // Step 6.
     if let Err(err) = result.permission_request(&promise) {
         // Step 7.
-        promise.reject_error(cx, err);
+        return promise.reject_error(cx, err);
     }
+    // NOTE: Step 8. is in `bluetoothpermissionresult.rs` in the `handle_response` function.
 }
 
 impl PermissionsMethods for Permissions {

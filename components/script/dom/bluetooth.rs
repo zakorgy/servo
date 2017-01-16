@@ -182,9 +182,9 @@ impl Bluetooth {
     // https://webbluetoothcg.github.io/web-bluetooth/#request-bluetooth-devices
     pub fn request_bluetooth_devices(&self,
                                      p: &Rc<Promise>,
-                                     sender: IpcSender<BluetoothResponseResult>,
                                      filters: &Option<Vec<BluetoothLEScanFilterInit>>,
-                                     optional_services: &Option<Vec<BluetoothServiceUUID>>) {
+                                     optional_services: &Option<Vec<BluetoothServiceUUID>>,
+                                     sender: IpcSender<BluetoothResponseResult>) {
         // TODO: Step 1: Triggered by user activation.
 
         // Step 2.2: There are no requiredServiceUUIDS, we scan for all devices.
@@ -521,7 +521,7 @@ impl BluetoothMethods for Bluetooth {
 
         // Step 2.
         let sender = response_async(&p, self);
-        self.request_bluetooth_devices(&p, sender, &option.filters, &option.optionalServices);
+        self.request_bluetooth_devices(&p, &option.filters, &option.optionalServices, sender);
         //Note: Step 3 - 4. in response function, Step 5. in handle_response function.
         return p;
     }

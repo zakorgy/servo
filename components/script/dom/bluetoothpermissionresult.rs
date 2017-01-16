@@ -55,6 +55,7 @@ impl BluetoothPermissionResult {
         self.global().as_window().bluetooth_thread()
     }
 
+    // https://w3c.github.io/permissions/#create-a-permissionstatus
     pub fn create_from_descriptor(global: &GlobalScope,
                                   descriptor: PermissionDescriptorType)
                                   -> Root<BluetoothPermissionResult> {
@@ -153,6 +154,7 @@ impl BluetoothPermissionResult {
         promise.resolve_native(cx, &self.parent);
     }
 
+    // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothpermissionresult
     pub fn permission_request(&self, promise: &Rc<Promise>) -> ErrorResult {
         let descriptor = self.parent.get_query().borrow();
         let options = match *descriptor {
@@ -169,13 +171,13 @@ impl BluetoothPermissionResult {
         // Step 2.
         let sender = response_async(promise, self);
         let bluetooth = self.get_bluetooth();
-        Ok(bluetooth.request_bluetooth_devices(promise, sender, &options.filters, &options.optionalServices))
+        Ok(bluetooth.request_bluetooth_devices(promise, &options.filters, &options.optionalServices, sender))
+        // NOTE: Step 3 is in `handle_response` function.
     }
 }
 
 
-// https://w3c.github.io/permissions/#dom-permissions-request
-// TODO: Make a BluetoothResponse variant wich returns with a vector of devices that matches.
+// TODO: Make a BluetoothResponse variant which returns with a vector of devices that matches.
 impl AsyncBluetoothListener for BluetoothPermissionResult {
     fn handle_response(&self, response: BluetoothResponse, promise_cx: *mut JSContext, promise: &Rc<Promise>) {
         match response {
@@ -183,7 +185,10 @@ impl AsyncBluetoothListener for BluetoothPermissionResult {
                 let bluetooth = &self.get_bluetooth();
                 let mut device_instance_map = bluetooth.get_device_map().borrow_mut();
                 if let Some(existing_device) = device_instance_map.get(&device.id.clone()) {
+                    // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothpermissionresult
+                    // Step 3.
                     *self.devices.borrow_mut() = vec!(JS::from_ref(&**existing_device));
+                    // https://w3c.github.io/permissions/#dom-permissions-request
                     // Step 8.
                     return promise.resolve_native(promise_cx, &self.parent);
                 }
@@ -192,7 +197,10 @@ impl AsyncBluetoothListener for BluetoothPermissionResult {
                                                      device.name.map(DOMString::from),
                                                      bluetooth);
                 device_instance_map.insert(device.id, JS::from_ref(&bt_device));
+                // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothpermissionresult
+                // Step 3.
                 *self.devices.borrow_mut() = vec!(JS::from_ref(&bt_device));
+                // https://w3c.github.io/permissions/#dom-permissions-request
                 // Step 8.
                 promise.resolve_native(promise_cx, &self.parent);
             },
