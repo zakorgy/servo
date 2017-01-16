@@ -26,6 +26,7 @@ use std::rc::Rc;
 
 const DESCRIPTOR_TYPE_ERROR: &'static str = "Wrong type of descriptor in argument list.";
 
+// https://webbluetoothcg.github.io/web-bluetooth/#bluetoothpermissionresult
 #[dom_struct]
 pub struct BluetoothPermissionResult {
     parent: PermissionStatus,
