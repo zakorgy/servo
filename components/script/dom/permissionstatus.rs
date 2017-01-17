@@ -21,7 +21,7 @@ use js::rust::get_object_compartment;
 // Enum for storing different type of PermissionDescriptors in the same type.
 #[derive(JSTraceable, HeapSizeOf)]
 pub enum PermissionDescriptorType {
-    // TODO(zakorgy): Finish this list.
+    // NOTE(zakorgy): Other types are not yet implemented, because we only need the bluetooth related one.
     Undefined,
     Default(PermissionDescriptor),
     Bluetooth(BluetoothPermissionDescriptor),

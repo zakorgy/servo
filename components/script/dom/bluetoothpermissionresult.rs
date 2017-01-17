@@ -184,7 +184,7 @@ impl AsyncBluetoothListener for BluetoothPermissionResult {
             BluetoothResponse::RequestDevice(device) => {
                 let bluetooth = &self.get_bluetooth();
                 let mut device_instance_map = bluetooth.get_device_map().borrow_mut();
-                if let Some(existing_device) = device_instance_map.get(&device.id.clone()) {
+                if let Some(existing_device) = device_instance_map.get(&device.id) {
                     // https://webbluetoothcg.github.io/web-bluetooth/#bluetoothpermissionresult
                     // Step 3.
                     *self.devices.borrow_mut() = vec!(JS::from_ref(&**existing_device));
