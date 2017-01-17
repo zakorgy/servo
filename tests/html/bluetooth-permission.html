@@ -44,9 +44,8 @@
             log("Result is instance of BluetoothPermissionResult subclass: " + (r instanceof BluetoothPermissionResult));
             log("State of result: " + r.state);
             let device = r.devices()[0];
-            if (device) {
+            if (device)
                 log("Result contains device: " + r.devices()[0].name);
-            }
         })
         .catch(err => log(err));
     }
