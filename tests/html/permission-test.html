@@ -12,21 +12,21 @@
         let permissionName = document.getElementById('permissionName').value;
         let permissionDescriptor = {name: permissionName};
         window.navigator.permissions.query(permissionDescriptor)
-        .then(status => log(permissionName + "'s permission status is: " + status.state))
+        .then(status => log("permission status of " + permissionName + " is: " + status.state))
         .catch(err => log(err));
     }
     function onRequestButtonClick() {
         let permissionName = document.getElementById('permissionName').value;
         let permissionDescriptor = {name: permissionName};
         window.navigator.permissions.request(permissionDescriptor)
-        .then(status => log(permissionName + "'s permission status is: " + status.state))
+        .then(status => log("permission status of " + permissionName + " is: " + status.state))
         .catch(err => log(err));
     }
     function onRevokeButtonClick() {
         let permissionName = document.getElementById('permissionName').value;
         let permissionDescriptor = {name: permissionName};
         window.navigator.permissions.revoke(permissionDescriptor)
-        .then(status => log(permissionName + "'s permission status is: " + status.state))
+        .then(status => log("permission status of " + permissionName + " is: " + status.state))
         .catch(err => log(err));
     }
     function log(line) {

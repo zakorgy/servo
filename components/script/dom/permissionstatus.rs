@@ -50,8 +50,9 @@ impl PermissionStatus {
                            PermissionStatusBinding::Wrap)
     }
 
-    pub fn set_query(&self, permission_descriptor: PermissionDescriptorType) {
+    pub fn set_query(&self, permission_descriptor: PermissionDescriptorType) -> Root<PermissionStatus>  {
         *self.query.borrow_mut() = permission_descriptor;
+        Root::from_ref(self)
     }
 
     pub fn get_query(&self) -> &DOMRefCell<PermissionDescriptorType> {
@@ -63,8 +64,7 @@ impl PermissionStatus {
                                   permission_desc: PermissionDescriptorType)
                                   -> Root<PermissionStatus> {
         let permission_status = PermissionStatus::new(global);
-        permission_status.set_query(permission_desc);
-        permission_status
+        permission_status.set_query(permission_desc)
     }
 
     // https://w3c.github.io/permissions/#boolean-permission-query-algorithm
@@ -120,7 +120,7 @@ unsafe impl JSTraceable for BluetoothPermissionDescriptor {
 #[allow(unsafe_code)]
 // https://w3c.github.io/permissions/#permission-state
 fn get_descriptors_permission_state(descriptor: &PermissionDescriptorType, obj: *mut JSObject) -> PermissionState {
-    // TODO: Step 1.
+    // TODO: Step 1: If settings wasn’t passed, set it to the current settings object.
 
     let name = match descriptor {
         // TODO(zakorgy): Finish this list.

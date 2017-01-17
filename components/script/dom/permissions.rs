@@ -80,7 +80,8 @@ fn sync_default_permission_query_call(global: &GlobalScope,
     let status = PermissionStatus::create_from_descriptor(global, PermissionDescriptorType::Default(descriptor));
 
     // Step 6.
-    // NOTE: `status.query` is the same as descriptor
+    // NOTE: `status.query` was initialized to descriptor in the previous statement.
+    // We can use it here, instead cloning descriptor.
     status.permission_query(&*status.get_query().borrow());
 
     // Step 7.
@@ -96,7 +97,8 @@ fn sync_default_permission_request_call(global: &GlobalScope,
     let status = PermissionStatus::create_from_descriptor(global, PermissionDescriptorType::Default(descriptor));
 
     // Step 6.
-    // NOTE: `status.query` is the same as descriptor
+    // NOTE: `status.query` was initialized to descriptor in the previous statement.
+    // We can use it here, instead cloning descriptor.
     if let Err(err) = status.permission_request(&*status.get_query().borrow()) {
         // Step 7.
         return promise.reject_error(cx, err);
