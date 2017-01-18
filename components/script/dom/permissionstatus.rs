@@ -3,10 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use core::clone::Clone;
+use core::cmp::Eq;
+use core::hash::Hash;
 use dom::bindings::cell::DOMRefCell;
 use dom::bindings::codegen::Bindings::BluetoothPermissionResultBinding::BluetoothPermissionDescriptor;
 use dom::bindings::codegen::Bindings::EventHandlerBinding::EventHandlerNonNull;
 use dom::bindings::codegen::Bindings::PermissionStatusBinding::{self, PermissionDescriptor, PermissionName};
+use dom::bindings::codegen::Bindings::PermissionStatusBinding::PermissionNameValues;
 use dom::bindings::codegen::Bindings::PermissionStatusBinding::{PermissionState, PermissionStatusMethods};
 use dom::bindings::error::ErrorResult;
 use dom::bindings::js::Root;
@@ -17,6 +20,20 @@ use dom::globalscope::GlobalScope;
 use heapsize::HeapSizeOf;
 use js::jsapi::{JS_GetIsSecureContext, JSObject, JSTracer};
 use js::rust::get_object_compartment;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::hash::Hasher;
+
+thread_local!(static PREVIOUS_INVOCATION_RESULTS: RefCell<HashMap<PermissionName, PermissionState>> =
+              RefCell::new(HashMap::new()));
+
+impl Hash for PermissionName {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        PermissionNameValues::strings[*self as usize].hash(state);
+    }
+}
+
+impl Eq for PermissionName {}
 
 // Enum for storing different type of PermissionDescriptors in the same type.
 #[derive(JSTraceable, HeapSizeOf)]
@@ -69,17 +86,30 @@ impl PermissionStatus {
 
     // https://w3c.github.io/permissions/#boolean-permission-query-algorithm
     pub fn permission_query(&self, permission_desc: &PermissionDescriptorType) {
+
+        let permission_name = match *permission_desc {
+            PermissionDescriptorType::Default(ref desc) => desc.name,
+            PermissionDescriptorType::Bluetooth(ref desc) => desc.parent.name,
+            PermissionDescriptorType::Undefined => return,
+        };
+
+        let permission_state = get_descriptors_permission_state(permission_name.clone(),
+                                                                self.eventtarget.reflector().get_jsobject().get());
+
+        PREVIOUS_INVOCATION_RESULTS.with(|pi_results| {
+            pi_results.borrow_mut().insert(permission_name, permission_state);
+        });
+
         // Step 1.
-        *self.state.borrow_mut() =
-            get_descriptors_permission_state(permission_desc, self.eventtarget.reflector().get_jsobject().get());
+        *self.state.borrow_mut() = permission_state;
     }
 
     // https://w3c.github.io/permissions/#boolean-permission-request-algorithm
     pub fn permission_request(&self, permission_desc: &PermissionDescriptorType) -> ErrorResult {
         // Step 1.
         self.permission_query(permission_desc);
-        // Step 2.
-        match *self.state.borrow() {
+        let state = self.state.borrow().clone();
+        match state {
             PermissionState::Prompt => {
                 // TODO: Step 3: Ask the users's permission.
                 // https://w3c.github.io/permissions/#request-permission-to-use
@@ -88,6 +118,7 @@ impl PermissionStatus {
                 return Ok(self.permission_query(permission_desc));
             },
             _ => {
+                // Step 2.
                 return Ok(());
             },
         }
@@ -119,25 +150,27 @@ unsafe impl JSTraceable for BluetoothPermissionDescriptor {
 
 #[allow(unsafe_code)]
 // https://w3c.github.io/permissions/#permission-state
-fn get_descriptors_permission_state(descriptor: &PermissionDescriptorType, obj: *mut JSObject) -> PermissionState {
+fn get_descriptors_permission_state(name: PermissionName, obj: *mut JSObject) -> PermissionState {
     // TODO: Step 1: If settings wasn’t passed, set it to the current settings object.
 
-    let name = match descriptor {
-        // TODO(zakorgy): Finish this list.
-        &PermissionDescriptorType::Default(ref desc) => desc.name,
-        &PermissionDescriptorType::Bluetooth(ref desc) => desc.parent.name,
-        &PermissionDescriptorType::Undefined => return PermissionState::Denied,
-    };
-
+    let mut permission_state = PermissionState::Prompt;
     unsafe {
         // Step 2.
-        if !(JS_GetIsSecureContext(get_object_compartment(obj)) || allowed_in_nonsecure_contexts(name)) {
+        if !(JS_GetIsSecureContext(get_object_compartment(obj)) || allowed_in_nonsecure_contexts(name.clone())) {
             return PermissionState::Denied;
         }
     }
-    // TODO: Step 3: Store the invocation results
-    // TODO: Step 4: Make interaction with the user to discover the user's intent.
-    PermissionState::Granted
+
+    // Step 3.
+    PREVIOUS_INVOCATION_RESULTS.with(|pi_results| {
+        if let Some(state) = pi_results.borrow().get(&name) {
+            permission_state = state.clone();
+        }
+    });
+
+
+    // Step 4.
+    permission_state
 }
 
 
