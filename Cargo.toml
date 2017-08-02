@@ -18,9 +18,10 @@ opt-level = 3
 # If you need to temporarily test Servo with a local fork of some upstream
 # crate, add that here. Use the form:
 #
-#     <crate> = { path = "/path/to/local/checkout" }
-#webrender = { path = '../webrender/webrender'}
-#webrender_api = { path = '../webrender/webrender_api'}
+#     "<crate>:<version>" = { path = "/path/to/local/checkout" }
+#"https://github.com/servo/webrender#0.44.0" = { git = 'https://github.com/szeged/webrender.git', branch = "gfx-wr-29ce31a"}
+#"https://github.com/servo/webrender#webrender_traits:0.44.0" = { git = 'https://github.com/szeged/webrender.git', branch = "gfx-wr-29ce31a"}
 [replace]
-"https://github.com/servo/webrender#0.50.0" = { path = '../webrender/webrender' }
-"https://github.com/servo/webrender#webrender_api:0.50.0" = { path = '../webrender/webrender_api' }
+"https://github.com/servo/webrender#0.50.0" = { path = "../webrender/webrender"}
+"https://github.com/servo/webrender#webrender_api:0.50.0" = { path = "../webrender/webrender_api"}
+"https://github.com/rust-lang/crates.io-index#winit:0.7.6" = { path ="../winit"}

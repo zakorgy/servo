@@ -53,6 +53,7 @@ pub extern crate style_traits;
 pub extern crate webrender_api;
 pub extern crate webvr;
 pub extern crate webvr_traits;
+pub extern crate winit;
 
 #[cfg(feature = "webdriver")]
 extern crate webdriver_server;
@@ -157,7 +158,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
         let mut resource_path = resources_dir_path().unwrap();
         resource_path.push("shaders");
 
-        let (mut webrender, webrender_api_sender, _) = {
+        let (mut webrender, webrender_api_sender, wrapper_window) = {
             // TODO(gw): Duplicates device_pixels_per_screen_px from compositor. Tidy up!
             let scale_factor = window.hidpi_factor().get();
             let device_pixel_ratio = match opts.device_pixels_per_px {
@@ -203,6 +204,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
 
         let webrender_api = webrender_api_sender.create_api();
         let webrender_document = webrender_api.add_document(window.framebuffer_size());
+        window.set_wrapper_window(Some(wrapper_window));
 
         // Important that this call is done in a single-threaded fashion, we
         // can't defer it after `create_constellation` has started.

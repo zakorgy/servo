@@ -185,7 +185,7 @@ pub struct IOCompositor<Window: WindowMethods> {
     webrender_api: webrender_api::RenderApi,
 
     /// GL functions interface (may be GL or GLES)
-    gl: Rc<gl::Gl>,
+    //gl: Rc<gl::Gl>,
 
     /// Map of the pending paint metrics per layout thread.
     /// The layout thread for each specific pipeline expects the compositor to
@@ -346,7 +346,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
         };
 
         IOCompositor {
-            gl: window.gl(),
+            //gl: window.gl(),
             window: window,
             port: state.receiver,
             root_pipeline: None,
@@ -1277,8 +1277,9 @@ impl<Window: WindowMethods> IOCompositor<Window> {
         }
 
         let render_target_info = match target {
-            CompositeTarget::Window => RenderTargetInfo::empty(),
-            _ => initialize_png(&*self.gl, width, height)
+            /*CompositeTarget::Window => RenderTargetInfo::empty(),
+            _ => initialize_png(&*self.gl, width, height)*/
+            _ => RenderTargetInfo::empty(),
         };
 
         profile(ProfilerCategory::Compositing, None, self.time_profiler_chan.clone(), || {
@@ -1374,7 +1375,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
                 width: usize,
                 height: usize)
                 -> RgbImage {
-        let mut pixels = self.gl.read_pixels(0, 0,
+        /*let mut pixels = self.gl.read_pixels(0, 0,
                                              width as gl::GLsizei,
                                              height as gl::GLsizei,
                                              gl::RGB, gl::UNSIGNED_BYTE);
@@ -1383,8 +1384,8 @@ impl<Window: WindowMethods> IOCompositor<Window> {
 
         self.gl.delete_buffers(&render_target_info.texture_ids);
         self.gl.delete_renderbuffers(&render_target_info.renderbuffer_ids);
-        self.gl.delete_framebuffers(&render_target_info.framebuffer_ids);
-
+        self.gl.delete_framebuffers(&render_target_info.framebuffer_ids);*/
+        let mut pixels = vec![1; width * height * 3];
         // flip image vertically (texture is upside down)
         let orig_pixels = pixels.clone();
         let stride = width * 3;
