@@ -18,6 +18,8 @@ use std::rc::Rc;
 use style_traits::cursor::Cursor;
 use webrender_traits::ScrollLocation;
 use glutin;
+use winit;
+use webrender::WrapperWindow;
 
 #[derive(Clone)]
 pub enum MouseWindowEvent {
@@ -169,7 +171,7 @@ pub trait WindowMethods {
     fn set_favicon(&self, url: ServoUrl);
 
     /// Return the GL function pointer trait.
-    fn gl(&self) -> Rc<gl::Gl>;
+    //fn gl(&self) -> Rc<gl::Gl>;
 
     /// Set whether the application is currently animating.
     /// Typically, when animations are active, the window
@@ -177,5 +179,8 @@ pub trait WindowMethods {
     /// run the event loop at the vsync interval.
     fn set_animation_state(&self, _state: AnimationState) {}
 
-    fn get_window(&self) -> &glutin::Window;
+    fn set_wrapper_window(&self, window: Option<WrapperWindow>);
+
+    //fn get_window(&self) -> Rc<glutin::Window>;
+    fn get_window(&self) -> Rc<winit::Window>;
 }
