@@ -157,7 +157,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
         let mut resource_path = resources_dir_path().unwrap();
         resource_path.push("shaders");
 
-        let (mut webrender, webrender_api_sender) = {
+        let (mut webrender, webrender_api_sender, _) = {
             // TODO(gw): Duplicates device_pixels_per_screen_px from compositor. Tidy up!
             let scale_factor = window.hidpi_factor().get();
             let device_pixel_ratio = match opts.device_pixels_per_px {
@@ -185,7 +185,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
             let mut debug_flags = webrender::DebugFlags::empty();
             debug_flags.set(webrender::PROFILER_DBG, opts.webrender_stats);
 
-            webrender::Renderer::new(window.gl(), webrender::RendererOptions {
+            webrender::Renderer::new(window.get_window(), webrender::RendererOptions {
                 device_pixel_ratio: device_pixel_ratio,
                 resource_override_path: Some(resource_path),
                 enable_aa: opts.enable_text_antialiasing,

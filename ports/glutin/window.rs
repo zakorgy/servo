@@ -170,7 +170,7 @@ impl HeadlessContext {
 }
 
 enum WindowKind {
-    Window(glutin::Window),
+    Window(Rc<glutin::Window>),
     Headless(HeadlessContext),
 }
 
@@ -274,7 +274,7 @@ impl Window {
 
             glutin_window.set_window_resize_callback(Some(Window::nested_window_resize as fn(u32, u32)));
 
-            WindowKind::Window(glutin_window)
+            WindowKind::Window(Rc::new(glutin_window))
         };
 
         let gl = match window_kind {
@@ -970,6 +970,17 @@ fn create_window_proxy(window: &Window) -> Option<glutin::WindowProxy> {
 }
 
 impl WindowMethods for Window {
+    fn get_window(&self) -> Rc<glutin::Window> {
+        match self.kind {
+            WindowKind::Window(ref window) => {
+                return window.clone();
+            }
+            WindowKind::Headless(ref context) => {
+                unreachable!()
+            }
+        }
+    }
+
     fn gl(&self) -> Rc<gl::Gl> {
         self.gl.clone()
     }
