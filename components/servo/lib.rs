@@ -53,6 +53,7 @@ pub extern crate style_traits;
 pub extern crate webrender_api;
 pub extern crate webvr;
 pub extern crate webvr_traits;
+pub extern crate winit;
 
 #[cfg(feature = "webdriver")]
 extern crate webdriver_server;
@@ -102,7 +103,7 @@ use std::cmp::max;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::mpsc::{Sender, channel};
-use webrender::RendererKind;
+use webrender::{DeviceInitParams, RendererKind};
 use webvr::{WebVRThread, WebVRCompositorHandler};
 
 pub use gleam::gl;
@@ -128,7 +129,7 @@ pub struct Servo<Window: WindowMethods + 'static> {
 }
 
 impl<Window> Servo<Window> where Window: WindowMethods + 'static {
-    pub fn new(window: Rc<Window>) -> Servo<Window> {
+    pub fn new(window: Rc<Window>, params: DeviceInitParams) -> Servo<Window> {
         // Global configuration options, parsed from the command line.
         let opts = opts::get();
 
@@ -154,8 +155,8 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
             devtools::start_server(port)
         });
 
-        let mut resource_path = resources_dir_path().unwrap();
-        resource_path.push("shaders");
+        /*let mut resource_path = resources_dir_path().unwrap();
+        resource_path.push("shaders");*/
 
         let (mut webrender, webrender_api_sender) = {
             // TODO(gw): Duplicates device_pixels_per_screen_px from compositor. Tidy up!
@@ -168,7 +169,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
                 }
             };
 
-            let renderer_kind = if opts::get().should_use_osmesa() {
+            /*let renderer_kind = if opts::get().should_use_osmesa() {
                 RendererKind::OSMesa
             } else {
                 RendererKind::Native
@@ -183,13 +184,12 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
             };
 
             let mut debug_flags = webrender::DebugFlags::empty();
-            debug_flags.set(webrender::DebugFlags::PROFILER_DBG, opts.webrender_stats);
+            debug_flags.set(webrender::DebugFlags::PROFILER_DBG, opts.webrender_stats);*/
 
             let render_notifier = Box::new(RenderNotifier::new(compositor_proxy.clone()));
-
-            webrender::Renderer::new(window.gl(), render_notifier, webrender::RendererOptions {
+            webrender::Renderer::new(render_notifier, webrender::RendererOptions {
                 device_pixel_ratio: device_pixel_ratio,
-                resource_override_path: Some(resource_path),
+                /*resource_override_path: Some(resource_path),
                 enable_aa: opts.enable_text_antialiasing,
                 debug_flags: debug_flags,
                 enable_batcher: opts.webrender_batch,
@@ -198,9 +198,9 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
                 precache_shaders: opts.precache_shaders,
                 enable_scrollbars: opts.output_file.is_none(),
                 renderer_kind: renderer_kind,
-                enable_subpixel_aa: opts.enable_subpixel_text_antialiasing,
+                enable_subpixel_aa: opts.enable_subpixel_text_antialiasing,*/
                 ..Default::default()
-            }).expect("Unable to initialize webrender!")
+            }, params).expect("Unable to initialize webrender!")
         };
 
         let webrender_api = webrender_api_sender.create_api();
@@ -225,7 +225,8 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
                                                                     &mut webrender,
                                                                     webrender_document,
                                                                     webrender_api_sender,
-                                                                    window.gl());
+                                                                    //window.gl(),
+                                                                    );
 
         // Send the constellation's swmanager sender to service worker manager thread
         script::init_service_workers(sw_senders);
@@ -511,7 +512,8 @@ fn create_compositor_channel(event_loop_waker: Box<compositor_thread::EventLoopW
      })
 }
 
-fn create_constellation(user_agent: Cow<'static, str>,
+fn create_constellation(
+                        user_agent: Cow<'static, str>,
                         config_dir: Option<PathBuf>,
                         embedder_proxy: EmbedderProxy,
                         compositor_proxy: CompositorProxy,
@@ -523,7 +525,8 @@ fn create_constellation(user_agent: Cow<'static, str>,
                         webrender: &mut webrender::Renderer,
                         webrender_document: webrender_api::DocumentId,
                         webrender_api_sender: webrender_api::RenderApiSender,
-                        window_gl: Rc<gl::Gl>)
+                        //window_gl: Rc<gl::Gl>,
+                        )
                         -> (Sender<ConstellationMsg>, SWManagerSenders) {
     let bluetooth_thread: IpcSender<BluetoothRequest> = BluetoothThreadFactory::new();
 
@@ -548,15 +551,17 @@ fn create_constellation(user_agent: Cow<'static, str>,
     };
 
     // GLContext factory used to create WebGL Contexts
-    let gl_factory = if opts::get().should_use_osmesa() {
+    /*let gl_factory = if opts::get().should_use_osmesa() {
         GLContextFactory::current_osmesa_handle().unwrap()
     } else {
         GLContextFactory::current_native_handle(&compositor_proxy).unwrap()
-    };
+    };*/
 
+    let (gl_factory, gl) = GLContextFactory::new_headless_context_and_gl(&compositor_proxy);
     // Initialize WebGL Thread entry point.
     let (webgl_threads, image_handler, output_handler) = WebGLThreads::new(gl_factory,
-                                                                           window_gl,
+                                                                           //window_gl,
+                                                                           gl,
                                                                            webrender_api_sender.clone(),
                                                                            webvr_compositor.map(|c| c as Box<_>));
     // Set webrender external image handler for WebGL textures

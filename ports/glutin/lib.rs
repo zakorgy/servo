@@ -9,8 +9,8 @@
 extern crate compositing;
 #[cfg(target_os = "android")] extern crate egl;
 extern crate euclid;
-extern crate gleam;
-extern crate glutin;
+//extern crate gleam;
+//extern crate glutin;
 #[macro_use] extern crate log;
 extern crate msg;
 extern crate net_traits;
@@ -22,6 +22,8 @@ extern crate servo_geometry;
 extern crate servo_url;
 extern crate style_traits;
 extern crate webrender_api;
+extern crate webrender;
+extern crate winit;
 
 #[cfg(target_os = "windows")] extern crate winapi;
 #[cfg(target_os = "windows")] extern crate user32;
@@ -34,13 +36,13 @@ use window::Window;
 
 pub mod window;
 
-pub type WindowID = glutin::WindowID;
+pub type WindowID = winit::WindowId;
 
 pub trait NestedEventLoopListener {
     fn handle_event_from_nested_event_loop(&mut self, event: WindowEvent) -> bool;
 }
 
-pub fn create_window(parent: Option<WindowID>) -> Rc<Window> {
+pub fn create_window(parent: Option<WindowID>) -> (Rc<Window>, webrender::DeviceInitParams) {
     // Read command-line options.
     let opts = opts::get();
     let foreground = opts.output_file.is_none() && !opts.headless;
