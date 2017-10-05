@@ -91,6 +91,24 @@ impl GLContextFactory {
             }
         }
     }
+
+    pub fn new_headless_context(proxy: &CompositorProxy) -> GLContextFactory {
+        /*let ctx = GLContext::<NativeGLContext>::new_shared_with_dispatcher(Size2D::new(0, 0),
+                                                                           GLContextAttributes::default(),
+                                                                           ColorAttachmentType::Texture,
+                                                                           gl::GlType::default(),
+                                                                           None,
+                                                                           None).unwrap();*/
+        let headless_ctx = NativeGLContext::create_shared(None);
+        match headless_ctx {
+            Err(e) => {
+                panic!("ERROR DURING HEADLESS CONTEXT CREATION: {:?}", e);
+            },
+            _=> {},
+        };
+        GLContextFactory::Native(headless_ctx.unwrap().handle(), Some(MainThreadDispatcher::new(proxy.clone())))
+        //GLContextFactory::OSMesa(headless_ctx.unwrap().handle())
+    }
 }
 
 
