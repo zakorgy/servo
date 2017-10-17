@@ -102,7 +102,7 @@ use std::cmp::max;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::mpsc::{Sender, channel};
-use webrender::RendererKind;
+use webrender::{BackendDevice, Factory, RendererKind, RTV, DSV};
 use webvr::{WebVRThread, WebVRCompositorHandler};
 
 pub use gleam::gl;
@@ -128,7 +128,7 @@ pub struct Servo<Window: WindowMethods + 'static> {
 }
 
 impl<Window> Servo<Window> where Window: WindowMethods + 'static {
-    pub fn new(window: Rc<Window>) -> Servo<Window> {
+    pub fn new(window: Rc<Window>, device: BackendDevice, factory:  Factory, main_color: RTV, main_depth: DSV) -> Servo<Window> {
         // Global configuration options, parsed from the command line.
         let opts = opts::get();
 
@@ -157,7 +157,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
         let mut resource_path = resources_dir_path().unwrap();
         resource_path.push("shaders");
 
-        let (mut webrender, webrender_api_sender, _) = {
+        let (mut webrender, webrender_api_sender) = {
             // TODO(gw): Duplicates device_pixels_per_screen_px from compositor. Tidy up!
             let scale_factor = window.hidpi_factor().get();
             let device_pixel_ratio = match opts.device_pixels_per_px {
@@ -188,6 +188,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
 
             //webrender::Renderer::new(window.gl(), render_notifier, webrender::RendererOptions {
             webrender::Renderer::new(window.get_window(), webrender::RendererOptions {
+            //webrender::Renderer::new(webrender::RendererOptions {
                 device_pixel_ratio: device_pixel_ratio,
                 resource_override_path: Some(resource_path),
                 enable_aa: opts.enable_text_antialiasing,
@@ -200,7 +201,7 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
                 renderer_kind: renderer_kind,
                 enable_subpixel_aa: opts.enable_subpixel_text_antialiasing,
                 ..Default::default()
-            }).expect("Unable to initialize webrender!")
+            }, device, factory, main_color, main_depth).expect("Unable to initialize webrender!")
         };
 
         let webrender_api = webrender_api_sender.create_api();
