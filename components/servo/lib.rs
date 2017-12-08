@@ -184,11 +184,11 @@ impl<Window> Servo<Window> where Window: WindowMethods + 'static {
 
             let mut debug_flags = webrender::DebugFlags::empty();
             debug_flags.set(webrender::DebugFlags::PROFILER_DBG, opts.webrender_stats);
-            //let render_notifier = Box::new(RenderNotifier::new(compositor_proxy.clone()));
+            let render_notifier = Box::new(RenderNotifier::new(compositor_proxy.clone()));
 
-            //webrender::Renderer::new(window.gl(), render_notifier, webrender::RendererOptions {
-            webrender::Renderer::new(window.get_window(), webrender::RendererOptions {
-            //webrender::Renderer::new(webrender::RendererOptions {
+            //webrender::Renderer::new(window.gl(), render_notifier/*, webrender::RendererOptions*/ {
+            //webrender::Renderer::new(window.get_window(), webrender::RendererOptions {
+            webrender::Renderer::new(render_notifier, webrender::RendererOptions {
                 device_pixel_ratio: device_pixel_ratio,
                 resource_override_path: Some(resource_path),
                 enable_aa: opts.enable_text_antialiasing,
