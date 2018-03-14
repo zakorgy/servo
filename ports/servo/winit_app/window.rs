@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-//! A windowing implementation using glutin.
+//! A windowing implementation using winit.
 
 use compositing::compositor_thread::EventLoopWaker;
 use compositing::windowing::{AnimationState, MouseWindowEvent, WindowEvent};
@@ -10,12 +10,11 @@ use compositing::windowing::{WebRenderDebugOption, WindowMethods};
 use euclid::{Point2D, Size2D, TypedPoint2D, TypedVector2D, TypedScale, TypedSize2D};
 #[cfg(target_os = "windows")]
 use gdi32;
-use gleam::gl;
-use glutin;
-use glutin::{Api, ElementState, Event, GlContext, GlRequest, MouseButton, MouseScrollDelta, VirtualKeyCode};
-use glutin::TouchPhase;
-#[cfg(target_os = "macos")]
-use glutin::os::macos::{ActivationPolicy, WindowBuilderExt};
+use winit;
+use winit::{ElementState, Event, MouseButton, MouseScrollDelta, VirtualKeyCode};
+use winit::TouchPhase;
+//#[cfg(target_os = "macos")]
+//use glutin::os::macos::{ActivationPolicy, WindowBuilderExt};
 use msg::constellation_msg::{self, Key, TopLevelBrowsingContextId as BrowserId};
 use msg::constellation_msg::{KeyModifiers, KeyState, TraversalDirection};
 use net_traits::net_error_list::NetError;
@@ -48,7 +47,7 @@ use webrender_api::{DeviceUintRect, DeviceUintSize, ScrollLocation};
 use winapi;
 
 bitflags! {
-    struct GlutinKeyModifiers: u8 {
+    struct WinitKeyModifiers: u8 {
         const LEFT_CONTROL = 1;
         const RIGHT_CONTROL = 2;
         const LEFT_SHIFT = 4;
@@ -78,7 +77,7 @@ const LINE_HEIGHT: f32 = 38.0;
 const MULTISAMPLES: u16 = 16;
 
 #[cfg(target_os = "macos")]
-fn builder_with_platform_options(mut builder: glutin::WindowBuilder) -> glutin::WindowBuilder {
+fn builder_with_platform_options(mut builder: winit::WindowBuilder) -> winit::WindowBuilder {
     if opts::get().headless || opts::get().output_file.is_some() {
         // Prevent the window from showing in Dock.app, stealing focus,
         // or appearing at all when running in headless mode or generating an
@@ -89,11 +88,11 @@ fn builder_with_platform_options(mut builder: glutin::WindowBuilder) -> glutin::
 }
 
 #[cfg(not(target_os = "macos"))]
-fn builder_with_platform_options(builder: glutin::WindowBuilder) -> glutin::WindowBuilder {
+fn builder_with_platform_options(builder: winit::WindowBuilder) -> winit::WindowBuilder {
     builder
 }
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+/*#[cfg(any(target_os = "linux", target_os = "macos"))]
 struct HeadlessContext {
     width: u32,
     height: u32,
@@ -101,14 +100,14 @@ struct HeadlessContext {
     _buffer: Vec<u32>,
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]*/
 struct HeadlessContext {
     width: u32,
     height: u32,
 }
 
 impl HeadlessContext {
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    /*#[cfg(any(target_os = "linux", target_os = "macos"))]
     fn new(width: u32, height: u32) -> HeadlessContext {
         let mut attribs = Vec::new();
 
@@ -145,7 +144,7 @@ impl HeadlessContext {
         }
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]*/
     fn new(width: u32, height: u32) -> HeadlessContext {
         HeadlessContext {
             width: width,
@@ -153,7 +152,7 @@ impl HeadlessContext {
         }
     }
 
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    /*#[cfg(any(target_os = "linux", target_os = "macos"))]
     fn get_proc_address(s: &str) -> *const c_void {
         let c_str = CString::new(s).expect("Unable to create CString");
         unsafe {
@@ -161,14 +160,14 @@ impl HeadlessContext {
         }
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]*/
     fn get_proc_address(_: &str) -> *const c_void {
         ptr::null() as *const _
     }
 }
 
 enum WindowKind {
-    Window(glutin::GlWindow, RefCell<glutin::EventsLoop>),
+    Window(winit::Window, RefCell<winit::EventsLoop>),
     Headless(HeadlessContext),
 }
 
@@ -178,7 +177,7 @@ pub struct Window {
     screen_size: Size2D<u32>,
     inner_size: Cell<TypedSize2D<u32, DeviceIndependentPixel>>,
 
-    mouse_down_button: Cell<Option<glutin::MouseButton>>,
+    mouse_down_button: Cell<Option<winit::MouseButton>>,
     mouse_down_point: Cell<Point2D<i32>>,
     event_queue: RefCell<Vec<WindowEvent>>,
 
@@ -187,7 +186,7 @@ pub struct Window {
     browser_id: Cell<Option<BrowserId>>,
 
     mouse_pos: Cell<Point2D<i32>>,
-    key_modifiers: Cell<GlutinKeyModifiers>,
+    key_modifiers: Cell<WinitKeyModifiers>,
     current_url: RefCell<Option<ServoUrl>>,
 
     last_pressed_key: Cell<Option<constellation_msg::Key>>,
@@ -196,7 +195,6 @@ pub struct Window {
 
     fullscreen: Cell<bool>,
 
-    gl: Rc<gl::Gl>,
     suspended: Cell<bool>,
 }
 
@@ -239,8 +237,8 @@ impl Window {
             inner_size = TypedSize2D::new(width, height);
             WindowKind::Headless(HeadlessContext::new(width, height))
         } else {
-            let events_loop = glutin::EventsLoop::new();
-            let mut window_builder = glutin::WindowBuilder::new()
+            let events_loop = winit::EventsLoop::new();
+            let mut window_builder = winit::WindowBuilder::new()
                 .with_title("Servo".to_string())
                 .with_decorations(!opts::get().no_native_titlebar)
                 .with_transparency(opts::get().no_native_titlebar)
@@ -248,35 +246,36 @@ impl Window {
                 .with_visibility(visible)
                 .with_multitouch();
 
-            window_builder = builder_with_platform_options(window_builder);
+            //window_builder = builder_with_platform_options(window_builder);
 
-            let mut context_builder = glutin::ContextBuilder::new()
+            /*let mut context_builder = winit::ContextBuilder::new()
                 .with_gl(Window::gl_version())
-                .with_vsync(opts::get().enable_vsync);
+                .with_vsync(opts::get().enable_vsync);*/
 
-            if opts::get().use_msaa {
+            /*if opts::get().use_msaa {
                 context_builder = context_builder.with_multisampling(MULTISAMPLES)
-            }
+            }*/
 
-            let glutin_window = glutin::GlWindow::new(window_builder, context_builder, &events_loop)
-                .expect("Failed to create window.");
+            let mut events_loop = winit::EventsLoop::new();
 
-            unsafe {
-                glutin_window.context().make_current().expect("Couldn't make window current");
-            }
+            let winit_window = window_builder.build(&events_loop).expect("Failed to create window.");
+
+            /*unsafe {
+                winit_window.context().make_current().expect("Couldn't make window current");
+            }*/
 
             let (screen_width, screen_height) = events_loop.get_primary_monitor().get_dimensions();
             screen_size = Size2D::new(screen_width, screen_height);
             // TODO(ajeffrey): can this fail?
-            let (width, height) = glutin_window.get_inner_size().expect("Failed to get window inner size.");
+            let (width, height) = winit_window.get_inner_size().expect("Failed to get window inner size.");
             inner_size = TypedSize2D::new(width, height);
 
-            glutin_window.show();
+            winit_window.show();
 
-            WindowKind::Window(glutin_window, RefCell::new(events_loop))
+            WindowKind::Window(winit_window, RefCell::new(events_loop))
         };
 
-        let gl = match window_kind {
+        /*let gl = match window_kind {
             WindowKind::Window(ref window, ..) => {
                 match gl::GlType::default() {
                     gl::GlType::Gl => {
@@ -308,7 +307,7 @@ impl Window {
 
         gl.clear_color(0.6, 0.6, 0.6, 1.0);
         gl.clear(gl::COLOR_BUFFER_BIT);
-        gl.finish();
+        gl.finish();*/
 
         let window = Window {
             kind: window_kind,
@@ -319,11 +318,11 @@ impl Window {
             browser_id: Cell::new(None),
 
             mouse_pos: Cell::new(Point2D::new(0, 0)),
-            key_modifiers: Cell::new(GlutinKeyModifiers::empty()),
+            key_modifiers: Cell::new(WinitKeyModifiers::empty()),
             current_url: RefCell::new(None),
 
             last_pressed_key: Cell::new(None),
-            gl: gl.clone(),
+            //gl: gl.clone(),
             animation_state: Cell::new(AnimationState::Idle),
             fullscreen: Cell::new(false),
             inner_size: Cell::new(inner_size),
@@ -331,12 +330,12 @@ impl Window {
             suspended: Cell::new(false),
         };
 
-        window.present();
+        //window.present();
 
         Rc::new(window)
     }
 
-    #[cfg(not(any(target_arch = "arm", target_arch = "aarch64")))]
+    /*#[cfg(not(any(target_arch = "arm", target_arch = "aarch64")))]
     fn gl_version() -> GlRequest {
         return GlRequest::Specific(Api::OpenGl, (3, 2));
     }
@@ -344,7 +343,7 @@ impl Window {
     #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
     fn gl_version() -> GlRequest {
         GlRequest::Specific(Api::OpenGlEs, (3, 0))
-    }
+    }*/
 
     fn handle_received_character(&self, ch: char) {
         let modifiers = Window::glutin_mods_to_script_mods(self.key_modifiers.get());
@@ -371,14 +370,14 @@ impl Window {
 
     fn toggle_keyboard_modifiers(&self, virtual_key_code: VirtualKeyCode) {
         match virtual_key_code {
-            VirtualKeyCode::LControl => self.toggle_modifier(GlutinKeyModifiers::LEFT_CONTROL),
-            VirtualKeyCode::RControl => self.toggle_modifier(GlutinKeyModifiers::RIGHT_CONTROL),
-            VirtualKeyCode::LShift => self.toggle_modifier(GlutinKeyModifiers::LEFT_SHIFT),
-            VirtualKeyCode::RShift => self.toggle_modifier(GlutinKeyModifiers::RIGHT_SHIFT),
-            VirtualKeyCode::LAlt => self.toggle_modifier(GlutinKeyModifiers::LEFT_ALT),
-            VirtualKeyCode::RAlt => self.toggle_modifier(GlutinKeyModifiers::RIGHT_ALT),
-            VirtualKeyCode::LWin => self.toggle_modifier(GlutinKeyModifiers::LEFT_SUPER),
-            VirtualKeyCode::RWin => self.toggle_modifier(GlutinKeyModifiers::RIGHT_SUPER),
+            VirtualKeyCode::LControl => self.toggle_modifier(WinitKeyModifiers::LEFT_CONTROL),
+            VirtualKeyCode::RControl => self.toggle_modifier(WinitKeyModifiers::RIGHT_CONTROL),
+            VirtualKeyCode::LShift => self.toggle_modifier(WinitKeyModifiers::LEFT_SHIFT),
+            VirtualKeyCode::RShift => self.toggle_modifier(WinitKeyModifiers::RIGHT_SHIFT),
+            VirtualKeyCode::LAlt => self.toggle_modifier(WinitKeyModifiers::LEFT_ALT),
+            VirtualKeyCode::RAlt => self.toggle_modifier(WinitKeyModifiers::RIGHT_ALT),
+            VirtualKeyCode::LWin => self.toggle_modifier(WinitKeyModifiers::LEFT_SUPER),
+            VirtualKeyCode::RWin => self.toggle_modifier(WinitKeyModifiers::RIGHT_SUPER),
             _ => {}
         }
     }
@@ -401,21 +400,21 @@ impl Window {
         }
     }
 
-    fn handle_window_event(&self, event: glutin::Event) {
+    fn handle_window_event(&self, event: winit::Event) {
         match event {
             Event::WindowEvent {
-                event: glutin::WindowEvent::ReceivedCharacter(ch),
+                event: winit::WindowEvent::ReceivedCharacter(ch),
                 ..
             } => self.handle_received_character(ch),
             Event::WindowEvent {
-                event: glutin::WindowEvent::KeyboardInput {
-                    input: glutin::KeyboardInput {
+                event: winit::WindowEvent::KeyboardInput {
+                    input: winit::KeyboardInput {
                         state, virtual_keycode: Some(virtual_keycode), ..
                     }, ..
                 }, ..
             } => self.handle_keyboard_input(state, virtual_keycode),
             Event::WindowEvent {
-                event: glutin::WindowEvent::MouseInput {
+                event: winit::WindowEvent::MouseInput {
                     state, button, ..
                 }, ..
             } => {
@@ -425,7 +424,7 @@ impl Window {
                 }
             },
             Event::WindowEvent {
-                event: glutin::WindowEvent::CursorMoved {
+                event: winit::WindowEvent::CursorMoved {
                     position: (x, y),
                     ..
                 },
@@ -436,7 +435,7 @@ impl Window {
                     WindowEvent::MouseWindowMoveEventClass(TypedPoint2D::new(x as f32, y as f32)));
             }
             Event::WindowEvent {
-                event: glutin::WindowEvent::MouseWheel { delta, phase, .. },
+                event: winit::WindowEvent::MouseWheel { delta, phase, .. },
                 ..
             } => {
                 let (dx, dy) = match delta {
@@ -448,7 +447,7 @@ impl Window {
                 self.scroll_window(scroll_location, phase);
             },
             Event::WindowEvent {
-                event: glutin::WindowEvent::Touch(touch),
+                event: winit::WindowEvent::Touch(touch),
                 ..
             } => {
                 use script_traits::TouchId;
@@ -459,23 +458,24 @@ impl Window {
                 self.event_queue.borrow_mut().push(WindowEvent::Touch(phase, id, point));
             }
             Event::WindowEvent {
-                event: glutin::WindowEvent::Refresh,
+                event: winit::WindowEvent::Refresh,
                 ..
             } => self.event_queue.borrow_mut().push(WindowEvent::Refresh),
             Event::WindowEvent {
-                event: glutin::WindowEvent::Closed,
+                event: winit::WindowEvent::Closed,
                 ..
             } => {
                 self.event_queue.borrow_mut().push(WindowEvent::Quit);
             }
             Event::WindowEvent {
-                event: glutin::WindowEvent::Resized(width, height),
+                event: winit::WindowEvent::Resized(width, height),
                 ..
             } => {
                 // width and height are DevicePixel.
                 // window.resize() takes DevicePixel.
                 if let WindowKind::Window(ref window, _) = self.kind {
-                    window.resize(width, height);
+                    //window.resize(width, height);
+                    window.set_inner_size(width, height);
                 }
                 // window.set_inner_size() takes DeviceIndependentPixel.
                 let new_size = TypedSize2D::new(width as f32, height as f32);
@@ -498,7 +498,7 @@ impl Window {
         }
     }
 
-    fn toggle_modifier(&self, modifier: GlutinKeyModifiers) {
+    fn toggle_modifier(&self, modifier: WinitKeyModifiers) {
         let mut modifiers = self.key_modifiers.get();
         modifiers.toggle(modifier);
         self.key_modifiers.set(modifiers);
@@ -524,7 +524,7 @@ impl Window {
     }
 
     /// Helper function to handle a click
-    fn handle_mouse(&self, button: glutin::MouseButton, action: glutin::ElementState, x: i32, y: i32) {
+    fn handle_mouse(&self, button: winit::MouseButton, action: winit::ElementState, x: i32, y: i32) {
         use script_traits::MouseButton;
 
         // FIXME(tkuehn): max pixel dist should be based on pixel density
@@ -578,7 +578,7 @@ impl Window {
                         });
                         stop = servo_callback();
                     } else {
-                        // We block on glutin's event loop (window events)
+                        // We block on winit's event loop (window events)
                         events_loop.borrow_mut().run_forever(|e| {
                             self.handle_window_event(e);
                             if !self.event_queue.borrow().is_empty() {
@@ -587,9 +587,9 @@ impl Window {
                                 }
                             }
                             if stop || self.is_animating() {
-                                glutin::ControlFlow::Break
+                                winit::ControlFlow::Break
                             } else {
-                                glutin::ControlFlow::Continue
+                                winit::ControlFlow::Continue
                             }
                         });
                     }
@@ -715,7 +715,7 @@ impl Window {
         }
     }
 
-    fn glutin_key_to_script_key(key: glutin::VirtualKeyCode) -> Result<constellation_msg::Key, ()> {
+    fn glutin_key_to_script_key(key: winit::VirtualKeyCode) -> Result<constellation_msg::Key, ()> {
         // TODO(negge): add more key mappings
         match key {
             VirtualKeyCode::A => Ok(Key::A),
@@ -826,18 +826,18 @@ impl Window {
         }
     }
 
-    fn glutin_mods_to_script_mods(modifiers: GlutinKeyModifiers) -> constellation_msg::KeyModifiers {
+    fn glutin_mods_to_script_mods(modifiers: WinitKeyModifiers) -> constellation_msg::KeyModifiers {
         let mut result = constellation_msg::KeyModifiers::empty();
-        if modifiers.intersects(GlutinKeyModifiers::LEFT_SHIFT | GlutinKeyModifiers::RIGHT_SHIFT) {
+        if modifiers.intersects(WinitKeyModifiers::LEFT_SHIFT | WinitKeyModifiers::RIGHT_SHIFT) {
             result.insert(KeyModifiers::SHIFT);
         }
-        if modifiers.intersects(GlutinKeyModifiers::LEFT_CONTROL | GlutinKeyModifiers::RIGHT_CONTROL) {
+        if modifiers.intersects(WinitKeyModifiers::LEFT_CONTROL | WinitKeyModifiers::RIGHT_CONTROL) {
             result.insert(KeyModifiers::CONTROL);
         }
-        if modifiers.intersects(GlutinKeyModifiers::LEFT_ALT | GlutinKeyModifiers::RIGHT_ALT) {
+        if modifiers.intersects(WinitKeyModifiers::LEFT_ALT | WinitKeyModifiers::RIGHT_ALT) {
             result.insert(KeyModifiers::ALT);
         }
-        if modifiers.intersects(GlutinKeyModifiers::LEFT_SUPER | GlutinKeyModifiers::RIGHT_SUPER) {
+        if modifiers.intersects(WinitKeyModifiers::LEFT_SUPER | WinitKeyModifiers::RIGHT_SUPER) {
             result.insert(KeyModifiers::SUPER);
         }
         result
@@ -864,9 +864,9 @@ impl Window {
 }
 
 impl WindowMethods for Window {
-    fn gl(&self) -> Rc<gl::Gl> {
+    /*fn gl(&self) -> Rc<gl::Gl> {
         self.gl.clone()
-    }
+    }*/
 
     fn framebuffer_size(&self) -> DeviceUintSize {
         (self.inner_size.get().to_f32() * self.hidpi_factor()).to_usize().cast().expect("Window size should fit in u32")
@@ -944,7 +944,7 @@ impl WindowMethods for Window {
         self.fullscreen.set(state);
     }
 
-    fn present(&self) {
+    /*fn present(&self) {
         match self.kind {
             WindowKind::Window(ref window, ..) => {
                 if let Err(err) = window.swap_buffers() {
@@ -953,11 +953,11 @@ impl WindowMethods for Window {
             }
             WindowKind::Headless(..) => {}
         }
-    }
+    }*/
 
     fn create_event_loop_waker(&self) -> Box<EventLoopWaker> {
         struct GlutinEventLoopWaker {
-            proxy: Option<Arc<glutin::EventsLoopProxy>>,
+            proxy: Option<Arc<winit::EventsLoopProxy>>,
         }
         impl GlutinEventLoopWaker {
             fn new(window: &Window) -> GlutinEventLoopWaker {
@@ -1061,7 +1061,7 @@ impl WindowMethods for Window {
     fn set_cursor(&self, cursor: CursorKind) {
         match self.kind {
             WindowKind::Window(ref window, ..) => {
-                use glutin::MouseCursor;
+                use winit::MouseCursor;
 
                 let glutin_cursor = match cursor {
                     CursorKind::Auto => MouseCursor::Default,
@@ -1260,6 +1260,13 @@ impl WindowMethods for Window {
     fn handle_panic(&self, _: BrowserId, _reason: String, _backtrace: Option<String>) {
         // Nothing to do here yet. The crash has already been reported on the console.
     }
+
+    fn get_window(&self) -> &winit::Window {
+        match self.kind {
+            WindowKind::Window(ref window, ..) => return window,
+            WindowKind::Headless(..) => unreachable!(),
+        }
+    }
 }
 
 fn glutin_phase_to_touch_event_type(phase: TouchPhase) -> TouchEventType {
@@ -1272,7 +1279,7 @@ fn glutin_phase_to_touch_event_type(phase: TouchPhase) -> TouchEventType {
 }
 
 fn is_printable(key_code: VirtualKeyCode) -> bool {
-    use glutin::VirtualKeyCode::*;
+    use winit::VirtualKeyCode::*;
     match key_code {
         Escape |
         F1 |

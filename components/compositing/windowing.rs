@@ -7,7 +7,6 @@
 use compositor_thread::EventLoopWaker;
 use euclid::{Point2D, Size2D};
 use euclid::{TypedScale, TypedPoint2D, TypedSize2D};
-use gleam::gl;
 use ipc_channel::ipc::IpcSender;
 use msg::constellation_msg::{Key, KeyModifiers, KeyState, TopLevelBrowsingContextId, TraversalDirection};
 use net_traits::net_error_list::NetError;
@@ -19,6 +18,7 @@ use std::rc::Rc;
 use style_traits::DevicePixel;
 use style_traits::cursor::CursorKind;
 use webrender_api::{DeviceUintSize, DeviceUintRect, ScrollLocation};
+use winit;
 
 #[derive(Clone)]
 pub enum MouseWindowEvent {
@@ -125,8 +125,8 @@ pub trait WindowMethods {
     fn window_rect(&self) -> DeviceUintRect;
     /// Returns the size of the window in density-independent "px" units.
     fn size(&self) -> TypedSize2D<f32, DeviceIndependentPixel>;
-    /// Presents the window to the screen (perhaps by page flipping).
-    fn present(&self);
+    /*/// Presents the window to the screen (perhaps by page flipping).
+    fn present(&self);*/
 
     /// Return the size of the window with head and borders and position of the window values
     fn client_window(&self, ctx: TopLevelBrowsingContextId) -> (Size2D<u32>, Point2D<i32>);
@@ -181,8 +181,8 @@ pub trait WindowMethods {
     /// Add a favicon
     fn set_favicon(&self, ctx: TopLevelBrowsingContextId, url: ServoUrl);
 
-    /// Return the GL function pointer trait.
-    fn gl(&self) -> Rc<gl::Gl>;
+    /*/// Return the GL function pointer trait.
+    fn gl(&self) -> Rc<gl::Gl>;*/
 
     /// Set whether the application is currently animating.
     /// Typically, when animations are active, the window
@@ -192,4 +192,6 @@ pub trait WindowMethods {
 
     /// Called when a pipeline panics.
     fn handle_panic(&self, browser_id: TopLevelBrowsingContextId, reason: String, backtrace: Option<String>);
+
+    fn get_window(&self) -> &winit::Window;
 }

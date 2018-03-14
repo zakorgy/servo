@@ -8,6 +8,7 @@ use compositor_thread::{CompositorProxy, CompositorReceiver};
 use compositor_thread::{InitialCompositorState, Msg};
 use euclid::{TypedPoint2D, TypedVector2D, TypedScale};
 use gfx_traits::Epoch;
+use gfx_hal;
 use gleam::gl;
 use image::{DynamicImage, ImageFormat, RgbImage};
 use ipc_channel::ipc::{self, IpcSharedMemory};
@@ -93,7 +94,7 @@ impl FrameTreeId {
 enum LayerPixel {}
 
 /// NB: Never block on the constellation, because sometimes the constellation blocks on us.
-pub struct IOCompositor<Window: WindowMethods> {
+pub struct IOCompositor<Window: WindowMethods, Back: gfx_hal::Backend> {
     /// The application window.
     pub window: Rc<Window>,
 
@@ -175,7 +176,7 @@ pub struct IOCompositor<Window: WindowMethods> {
     in_scroll_transaction: Option<Instant>,
 
     /// The webrender renderer.
-    webrender: webrender::Renderer,
+    webrender: webrender::Renderer<Back>,
 
     /// The active webrender document.
     webrender_document: webrender_api::DocumentId,
@@ -183,8 +184,8 @@ pub struct IOCompositor<Window: WindowMethods> {
     /// The webrender interface, if enabled.
     webrender_api: webrender_api::RenderApi,
 
-    /// GL functions interface (may be GL or GLES)
-    gl: Rc<gl::Gl>,
+    /*/// GL functions interface (may be GL or GLES)
+    gl: Rc<gl::Gl>,*/
 
     /// Map of the pending paint metrics per layout thread.
     /// The layout thread for each specific pipeline expects the compositor to
@@ -274,7 +275,7 @@ impl RenderTargetInfo {
     }
 }
 
-fn initialize_png(gl: &gl::Gl, width: usize, height: usize) -> RenderTargetInfo {
+/*fn initialize_png(gl: &gl::Gl, width: usize, height: usize) -> RenderTargetInfo {
     let framebuffer_ids = gl.gen_framebuffers(1);
     gl.bind_framebuffer(gl::FRAMEBUFFER, framebuffer_ids[0]);
 
@@ -308,7 +309,7 @@ fn initialize_png(gl: &gl::Gl, width: usize, height: usize) -> RenderTargetInfo 
         renderbuffer_ids: renderbuffer_ids,
         texture_ids: texture_ids,
     }
-}
+}*/
 
 #[derive(Clone)]
 pub struct RenderNotifier {
@@ -346,9 +347,9 @@ impl webrender_api::RenderNotifier for RenderNotifier {
     }
 }
 
-impl<Window: WindowMethods> IOCompositor<Window> {
-    fn new(window: Rc<Window>, state: InitialCompositorState)
-           -> IOCompositor<Window> {
+impl<Window: WindowMethods, Back: gfx_hal::Backend> IOCompositor<Window, Back> {
+    fn new(window: Rc<Window>, state: InitialCompositorState<Back>)
+           -> IOCompositor<Window, Back> {
         let frame_size = window.framebuffer_size();
         let window_rect = window.window_rect();
         let scale_factor = window.hidpi_factor();
@@ -358,7 +359,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
         };
 
         IOCompositor {
-            gl: window.gl(),
+            //gl: window.gl(),
             window: window,
             port: state.receiver,
             root_pipeline: None,
@@ -393,7 +394,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
         }
     }
 
-    pub fn create(window: Rc<Window>, state: InitialCompositorState) -> IOCompositor<Window> {
+    pub fn create(window: Rc<Window>, state: InitialCompositorState<Back>) -> IOCompositor<Window, Back> {
         let mut compositor = IOCompositor::new(window, state);
 
         // Set the size of the root layer.
@@ -1279,10 +1280,10 @@ impl<Window: WindowMethods> IOCompositor<Window> {
             }
         }
 
-        let render_target_info = match target {
+        let render_target_info = RenderTargetInfo::empty(); /*match target {
             CompositeTarget::Window => RenderTargetInfo::empty(),
             _ => initialize_png(&*self.gl, width, height)
-        };
+        };*/
 
         profile(ProfilerCategory::Compositing, None, self.time_profiler_chan.clone(), || {
             debug!("compositor: compositing");
@@ -1324,7 +1325,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
             }
         }
 
-        let rv = match target {
+        let rv = None; /*match target {
             CompositeTarget::Window => None,
             CompositeTarget::WindowAndPng => {
                 let img = self.draw_img(render_target_info,
@@ -1356,10 +1357,10 @@ impl<Window: WindowMethods> IOCompositor<Window> {
                 });
                 None
             }
-        };
+        };*/
 
         // Perform the page flip. This will likely block for a while.
-        self.window.present();
+        //self.window.present();
 
         self.last_composite_time = precise_time_ns();
 
@@ -1372,7 +1373,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
         Ok(rv)
     }
 
-    fn draw_img(&self,
+    /*fn draw_img(&self,
                 render_target_info: RenderTargetInfo,
                 width: usize,
                 height: usize)
@@ -1406,7 +1407,7 @@ impl<Window: WindowMethods> IOCompositor<Window> {
             (&mut pixels[dst_start .. dst_start + stride]).clone_from_slice(&src_slice[..stride]);
         }
         RgbImage::from_raw(width as u32, height as u32, pixels).expect("Flipping image failed!")
-    }
+    }*/
 
     fn composite_if_necessary(&mut self, reason: CompositingReason) {
         if self.composition_request == CompositionRequest::NoCompositingNecessary {
