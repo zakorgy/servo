@@ -21,8 +21,10 @@ opt-level = 3
 #[patch.crates-io]
 
 [patch."https://github.com/servo/webrender"]
-"webrender" = { git = 'https://github.com/szeged/webrender', branch='rebase_upstream' }
-"webrender_api" = { git = 'https://github.com/szeged/webrender', branch='rebase_upstream' }
+#"webrender" = { git = 'https://github.com/szeged/webrender', branch='rebase_upstream' }
+"webrender" = { path = "../webrender_rebase/webrender"}
+#"webrender_api" = { git = 'https://github.com/szeged/webrender', branch='rebase_upstream' }
+"webrender_api" = { path = "../webrender_rebase/webrender_api"}
 
 # If you need to temporarily test Servo with a local fork of some upstream
 # crate, add that here. Use the form:
