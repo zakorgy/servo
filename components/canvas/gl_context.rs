@@ -110,8 +110,14 @@ impl GLContextFactory {
     pub fn new_headless_context_and_gl(proxy: &CompositorProxy) -> (GLContextFactory, Rc<gl::Gl>) {
         let headless_ctx = NativeGLContext::create_headless(&gl::GlType::default(), GLVersion::Major(3));
         let gl_factory = GLContextFactory::Native(headless_ctx.unwrap().handle(), Some(MainThreadDispatcher::new(proxy.clone())));
-        let gl_ctx_wrapper = gl_factory.new_context(WebGLVersion::WebGL2, Size2D::new(1024, 768), GLContextAttributes::default()).expect("Failed to create gl context wrapper.");
-        (gl_factory, gl_ctx_wrapper.clone_gl())
+        let gl_ctx_wrapper = gl_factory.new_context(WebGLVersion::WebGL2, Size2D::new(1024, 768), GLContextAttributes::default());
+        match gl_ctx_wrapper {
+            Ok(wrapper) => return (gl_factory, wrapper.clone_gl()),
+            Err(e) => {
+                println!("####EROR: {}", e);
+                panic!("FAIL");
+            }
+        }
     }
 
     fn gl_version(webgl_version: WebGLVersion) -> GLVersion {
