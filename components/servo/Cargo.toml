@@ -39,7 +39,7 @@ devtools_traits = {path = "../devtools_traits"}
 env_logger = "0.4"
 euclid = "0.17"
 gfx = {path = "../gfx"}
-gfx-hal = { git = "https://github.com/gfx-rs/gfx.git", rev= "d78bd11" , feature = "serde"}
+gfx-hal = { git = "https://github.com/gfx-rs/gfx.git", rev = "b3d362f" }
 gleam = "0.4"
 ipc-channel = "0.9"
 layout_thread = {path = "../layout_thread"}

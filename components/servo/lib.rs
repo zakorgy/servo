@@ -586,7 +586,7 @@ fn create_constellation<Back: gfx_hal::Backend>(
         GLContextFactory::current_native_handle(&compositor_proxy)
     };*/
 
-    let (gl_factory, gl) = GLContextFactory::new_headless_context_and_gl(&compositor_proxy);
+    /*let (gl_factory, gl) = GLContextFactory::new_headless_context_and_gl(&compositor_proxy);
 
     // Initialize WebGL Thread entry point.
     let webgl_threads = Some(gl_factory).map(|factory| {
@@ -607,7 +607,7 @@ fn create_constellation<Back: gfx_hal::Backend>(
         }
 
         webgl_threads
-    });
+    });*/
 
     let initial_state = InitialConstellationState {
         compositor_proxy,
@@ -623,7 +623,7 @@ fn create_constellation<Back: gfx_hal::Backend>(
         supports_clipboard,
         webrender_document,
         webrender_api_sender,
-        webgl_threads,
+        webgl_threads: None,
         webvr_chan,
     };
     let (constellation_chan, from_swmanager_sender) =

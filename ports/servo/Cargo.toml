@@ -29,8 +29,8 @@ backtrace = "0.3"
 bitflags = "1.0"
 compositing = {path = "../../components/compositing"}
 euclid = "0.17"
-gfx-backend-vulkan = { git = "https://github.com/gfx-rs/gfx.git", rev= "d78bd11", features = ["glsl-to-spirv"] }
-gfx-hal = { git = "https://github.com/gfx-rs/gfx.git", rev= "d78bd11" , feature = "serde"}
+gfx-backend-vulkan = { git = "https://github.com/gfx-rs/gfx.git", rev = "b3d362f" }
+gfx-hal = { git = "https://github.com/gfx-rs/gfx.git", rev = "b3d362f" }
 #gleam = "0.4"
 winit = "0.10.0"
 libservo = {path = "../../components/servo"}
