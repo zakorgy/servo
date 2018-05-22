@@ -22,9 +22,13 @@ extern crate android_injected_glue;
 extern crate backtrace;
 #[macro_use] extern crate bitflags;
 extern crate euclid;
-#[cfg(target_os = "windows")] extern crate gdi32;
-extern crate gleam;
-extern crate glutin;
+#[cfg(target_os = "windows")]
+extern crate gdi32;
+#[cfg(feature = "vulkan")]
+extern crate gfx_backend_vulkan as back;
+#[cfg(all(target_os = "windows", feature = "dx12"))]
+extern crate gfx_backend_dx12 as back;
+extern crate gfx_hal;
 #[cfg(not(target_os = "android"))]
 #[macro_use] extern crate lazy_static;
 // The window backed by glutin
@@ -43,6 +47,8 @@ mod glutin_app;
 mod resources;
 
 use backtrace::Backtrace;
+use servo::compositing::windowing::WindowMethods;
+use gfx_hal::Instance;
 use servo::Servo;
 use servo::compositing::windowing::WindowEvent;
 #[cfg(target_os = "android")]
@@ -173,7 +179,11 @@ fn main() {
 
     let target_url = cmdline_url.or(pref_url).or(blank_url).unwrap();
 
-    let mut servo = Servo::new(window.clone());
+    let instance = back::Instance::create("gfx-rs instance", 1);
+    let mut adapters = instance.enumerate_adapters();
+    let adapter = adapters.remove(0);
+    let mut surface = instance.create_surface(window.get_window());
+    let mut servo = Servo::new(window.clone(), &adapter, &mut surface);
 
     let (sender, receiver) = ipc::channel().unwrap();
     servo.handle_events(vec![WindowEvent::NewBrowser(target_url, sender)]);
