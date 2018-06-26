@@ -16,5 +16,6 @@ pub fn create_window() -> Rc<window::Window> {
     let foreground = opts.output_file.is_none() && !opts.headless;
 
     // Open a window.
+    println!("foreground = {:?}, opts.output_file = {:?}, opts.headless = {:?}", foreground, opts.output_file, opts.headless);
     window::Window::new(foreground, opts.initial_window_size)
 }
