@@ -31,7 +31,7 @@ opt-level = 3
 [replace]
 "https://github.com/servo/webrender#0.57.2" = { git = "https://github.com/szeged/webrender", branch="master_bak_sept" }
 "https://github.com/servo/webrender#webrender_api:0.57.2" = { git = "https://github.com/szeged/webrender", branch="master_bak_sept" }
-"https://github.com/gfx-rs/gfx.git#gfx-hal:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="580a58e1c1a83663b6f450ca689e5c40435275c4" }
-"https://github.com/gfx-rs/gfx.git#gfx-backend-vulkan:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="580a58e1c1a83663b6f450ca689e5c40435275c4" }
-"https://github.com/gfx-rs/gfx.git#gfx-backend-dx12:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="580a58e1c1a83663b6f450ca689e5c40435275c4" }
-"https://github.com/gfx-rs/gfx.git#gfx-backend-metal:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="580a58e1c1a83663b6f450ca689e5c40435275c4" }
+"https://github.com/gfx-rs/gfx.git#gfx-hal:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="b91498e8aa074e9e1936ead9ada4dfc5b7b02a42" }
+"https://github.com/gfx-rs/gfx.git#gfx-backend-vulkan:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="b91498e8aa074e9e1936ead9ada4dfc5b7b02a42" }
+"https://github.com/gfx-rs/gfx.git#gfx-backend-dx12:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="b91498e8aa074e9e1936ead9ada4dfc5b7b02a42" }
+"https://github.com/gfx-rs/gfx.git#gfx-backend-metal:0.1.0" = { git = "https://github.com/gfx-rs/gfx.git", rev="b91498e8aa074e9e1936ead9ada4dfc5b7b02a42" }
