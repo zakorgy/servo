@@ -239,7 +239,7 @@ impl Window {
                 winit_window.get_inner_size().expect("Failed to get window inner size.");
             inner_size = TypedSize2D::new(width as u32, height as u32);
 
-            winit_window.hide();
+            winit_window.show();
 
             WindowKind::Window(winit_window, RefCell::new(events_loop))
         };

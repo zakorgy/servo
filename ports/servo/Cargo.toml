@@ -40,7 +40,7 @@ lazy_static = "1"
 libservo = {path = "../../components/servo"}
 log = "0.4"
 tinyfiledialogs = "3.0"
-winit = {version = "0.16", features = ["icon_loading"]}
+winit = {version = "0.17", features = ["icon_loading"]}
 gfx-hal = { git = "https://github.com/gfx-rs/gfx.git" }
 sig = "0.1"
 

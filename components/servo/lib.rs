@@ -129,7 +129,7 @@ pub struct Servo<Window: WindowMethods + 'static, Back: gfx_hal::Backend + 'stat
 }
 
 impl<Window, Back> Servo<Window, Back> where Window: WindowMethods + 'static, Back: gfx_hal::Backend + 'static {
-    pub fn new(window: Rc<Window>, adapter: &gfx_hal::Adapter<Back>, surface: Back::Surface, size: (u32, u32)) -> Servo<Window, Back> {
+    pub fn new(window: Rc<Window>, adapter: gfx_hal::Adapter<Back>, surface: Back::Surface, size: (u32, u32)) -> Servo<Window, Back> {
         // Global configuration options, parsed from the command line.
         let opts = opts::get();
 
@@ -178,7 +178,7 @@ impl<Window, Back> Servo<Window, Back> where Window: WindowMethods + 'static, Ba
             let render_notifier = Box::new(RenderNotifier::new(compositor_proxy.clone()));
             let dp_ratio = coordinates.hidpi_factor.get();
             let init = webrender::DeviceInit {
-                adapter: &adapter,
+                adapter: adapter,
                 surface: surface,
                 window_size: (size.0 * dp_ratio as u32, size.1 * dp_ratio as u32),
             };

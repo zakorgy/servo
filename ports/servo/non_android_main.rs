@@ -161,7 +161,7 @@ pub fn main() {
     let mut surface = instance.create_surface(window.get_window());
     let winit::dpi::LogicalSize { width, height } = window.get_window().get_inner_size().unwrap();
 
-    let mut servo = Servo::new(window.clone(), &adapter, surface, (width as u32, height as u32));
+    let mut servo = Servo::new(window.clone(), adapter, surface, (width as u32, height as u32));
 
     let (sender, receiver) = ipc::channel().unwrap();
     servo.handle_events(vec![WindowEvent::NewBrowser(target_url, sender)]);
